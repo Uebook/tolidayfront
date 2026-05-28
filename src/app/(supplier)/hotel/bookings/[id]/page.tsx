@@ -10,6 +10,9 @@ import api from '@/lib/api';
 export default function BookingDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const queryClient = useQueryClient();
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [selectedRoomId, setSelectedRoomId] = useState('');
+    const [newRoomNumber, setNewRoomNumber] = useState('');
 
     const { data: booking, isLoading } = useQuery({
         queryKey: ['booking', id],
@@ -25,6 +28,39 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['booking', id] });
+        }
+    });
+
+    const { data: physicalRooms = [] } = useQuery({
+        queryKey: ['physical-rooms', booking?.roomTypeId],
+        queryFn: async () => {
+            const res = await api.get('/rooms');
+            return res.data.filter((r: any) => r.roomTypeId === booking?.roomTypeId);
+        },
+        enabled: !!booking?.roomTypeId && isAssignModalOpen
+    });
+
+    const createRoomMutation = useMutation({
+        mutationFn: async (roomNumber: string) => {
+            const res = await api.post('/rooms', {
+                roomNumber,
+                roomTypeId: booking?.roomTypeId
+            });
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['physical-rooms', booking?.roomTypeId] });
+            setNewRoomNumber('');
+        }
+    });
+
+    const assignRoomMutation = useMutation({
+        mutationFn: async (roomId: string) => {
+            await api.patch(`/bookings/${id}/assign-room`, { roomId });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['booking', id] });
+            setIsAssignModalOpen(false);
         }
     });
 
@@ -71,10 +107,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                     </Link>
 
                     <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-[var(--glass-border-light)] hover:bg-[var(--table-header)] transition-colors">
-                            <MessageSquare size={16} /> Message Guest
-                        </button>
-                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-[var(--glass-border-light)] hover:bg-[var(--table-header)] transition-colors">
+                        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-[var(--glass-border-light)] hover:bg-[var(--table-header)] transition-colors">
                             <Printer size={16} /> Print Voucher
                         </button>
                     </div>
@@ -170,10 +203,13 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                                 <div className="p-4 rounded-xl bg-[var(--table-header)] border border-[var(--glass-border-light)] md:col-span-2 flex items-center justify-between">
                                     <div>
                                         <p className="text-xs text-[hsl(var(--muted-foreground))] mb-1">Room Number</p>
-                                        <p className="font-medium text-[hsl(var(--foreground))]">Unassigned</p>
+                                        <p className="font-medium text-[hsl(var(--foreground))]">{booking.assignedRoom ? booking.assignedRoom.roomNumber : 'Unassigned'}</p>
                                     </div>
-                                    <button className="text-sm text-[hsl(var(--accent))] font-medium hover:underline">
-                                        Assign Room
+                                    <button 
+                                        onClick={() => setIsAssignModalOpen(true)}
+                                        className="text-sm text-[hsl(var(--accent))] font-medium hover:underline"
+                                    >
+                                        {booking.assignedRoom ? 'Change Room' : 'Assign Room'}
                                     </button>
                                 </div>
                             </div>
@@ -219,7 +255,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                                 <CreditCard size={20} className="text-[hsl(var(--accent))]" /> Payment Summary
                             </h3>
 
-                            <div className="space-y-3 mb-6">
+                            <div className="space-y-3">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-[hsl(var(--muted-foreground))]">Booking Total</span>
                                     <span className="text-[hsl(var(--foreground))] font-medium">₹{Number(booking.totalAmount).toLocaleString()}</span>
@@ -229,15 +265,81 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                                     <span className="text-lg font-bold text-[hsl(var(--foreground))]">₹{Number(booking.totalAmount).toLocaleString()}</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                            <button className="w-full mt-4 btn-primary py-2.5 text-sm">
-                                Record Payment
+            {/* Assign Room Modal */}
+            {isAssignModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="glass-card w-full max-w-md p-6 animate-fadeIn">
+                        <h3 className="text-lg font-bold text-[hsl(var(--foreground))] mb-4">Assign Room Number</h3>
+                        
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">Select Existing Room</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {physicalRooms.map((room: any) => (
+                                        <button
+                                            key={room.id}
+                                            onClick={() => setSelectedRoomId(room.id)}
+                                            className={`p-2 rounded-lg text-sm font-medium border transition-colors ${
+                                                selectedRoomId === room.id 
+                                                ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))]' 
+                                                : 'border-[var(--glass-border)] hover:border-[hsl(var(--accent)/0.5)]'
+                                            }`}
+                                        >
+                                            {room.roomNumber}
+                                        </button>
+                                    ))}
+                                    {physicalRooms.length === 0 && (
+                                        <div className="col-span-3 text-sm text-[hsl(var(--muted-foreground))] py-2">
+                                            No rooms created for this room type yet.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-[var(--glass-border-light)]">
+                                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">Or Add New Room</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={newRoomNumber}
+                                        onChange={(e) => setNewRoomNumber(e.target.value)}
+                                        placeholder="e.g. 101" 
+                                        className="flex-1 px-3 py-2 bg-[var(--table-header)] border border-[var(--glass-border-light)] rounded-lg text-sm focus:outline-none focus:border-[hsl(var(--accent))]"
+                                    />
+                                    <button 
+                                        onClick={() => createRoomMutation.mutate(newRoomNumber)}
+                                        disabled={!newRoomNumber.trim() || createRoomMutation.isPending}
+                                        className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t border-[var(--glass-border-light)]">
+                            <button 
+                                onClick={() => setIsAssignModalOpen(false)}
+                                className="px-4 py-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={() => assignRoomMutation.mutate(selectedRoomId)}
+                                disabled={!selectedRoomId || assignRoomMutation.isPending}
+                                className="btn-primary px-6 py-2 text-sm disabled:opacity-50"
+                            >
+                                Assign
                             </button>
                         </div>
                     </div>
                 </div>
-
-            </div>
+            )}
         </div>
     );
 }
