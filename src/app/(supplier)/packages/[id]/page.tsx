@@ -99,10 +99,6 @@ export default function PackageDetailPage() {
         setItinerary(itinerary.filter((_, i) => i !== index).map((day, i) => ({ ...day, day: i + 1 })));
     };
 
-    const removeItineraryDay = (index: number) => {
-        setItinerary(itinerary.filter((_, i) => i !== index).map((day, i) => ({ ...day, day: i + 1 })));
-    };
-
     const nextStep = () => setStep(s => s + 1);
     const prevStep = () => setStep(s => s - 1);
 
