@@ -9,6 +9,7 @@ import {
     Save, Info, CheckCircle2, Upload, X, MapPin, Grid
 } from 'lucide-react';
 import api from '@/lib/api';
+import MediaSelector from '@/components/ui/MediaSelector';
 
 export default function CreatePackagePage() {
     const router = useRouter();
@@ -35,10 +36,6 @@ export default function CreatePackagePage() {
 
     // Media State
     const [images, setImages] = useState<string[]>([]); // URLs of selected images
-    const [galleryImages, setGalleryImages] = useState<any[]>([]);
-    const [showGallery, setShowGallery] = useState(false);
-    const [isFetchingGallery, setIsFetchingGallery] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -71,49 +68,6 @@ export default function CreatePackagePage() {
 
     const removeItineraryDay = (index: number) => {
         setItinerary(itinerary.filter((_, i) => i !== index).map((day, i) => ({ ...day, day: i + 1 })));
-    };
-
-    // Gallery & Media Logic
-    const fetchGallery = async () => {
-        setIsFetchingGallery(true);
-        try {
-            const res = await api.get('/media');
-            setGalleryImages(res.data);
-        } catch (err) {
-            console.error('Failed to fetch gallery', err);
-        } finally {
-            setIsFetchingGallery(false);
-        }
-    };
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files?.length) return;
-        setIsLoading(true);
-        const file = e.target.files[0];
-        const uploadData = new FormData();
-        uploadData.append('file', file);
-        uploadData.append('category', 'Tour Package');
-
-        try {
-            const res = await api.post('/media/upload', uploadData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            setImages(prev => [...prev, res.data.url]);
-        } catch (err) {
-            alert('Upload failed');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const toggleGalleryImage = (url: string) => {
-        setImages(prev => 
-            prev.includes(url) ? prev.filter(img => img !== url) : [...prev, url]
-        );
-    };
-
-    const removeImage = (index: number) => {
-        setImages(images.filter((_, i) => i !== index));
     };
 
     const nextStep = () => setStep(s => s + 1);
@@ -368,46 +322,13 @@ export default function CreatePackagePage() {
             case 5:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div 
-                                className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--glass-border)] rounded-3xl p-8 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group shadow-inner"
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
-                                <div className="w-12 h-12 rounded-2xl bg-blue-600/10 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <Upload size={24} />
-                                </div>
-                                <h3 className="font-bold text-lg">Upload New Image</h3>
-                                <p className="text-muted-foreground text-xs">Directly from your device</p>
-                            </div>
-
-                            <div 
-                                className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--glass-border)] rounded-3xl p-8 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group shadow-inner"
-                                onClick={() => { setShowGallery(true); fetchGallery(); }}
-                            >
-                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <Grid size={24} />
-                                </div>
-                                <h3 className="font-bold text-lg">Select from Gallery</h3>
-                                <p className="text-muted-foreground text-xs">Choose from already uploaded images</p>
-                            </div>
-                        </div>
-
-                        {images.length > 0 && (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
-                                {images.map((img, index) => (
-                                    <div key={index} className="relative aspect-video rounded-2xl overflow-hidden border border-[var(--glass-border)] shadow-lg group">
-                                        <img src={img} alt="Selected" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                        <button
-                                            onClick={() => removeImage(index)}
-                                            className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-lg hover:bg-red-500 transition-colors backdrop-blur-md opacity-0 group-hover:opacity-100"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <MediaSelector 
+                            selectedImages={images} 
+                            onSelect={setImages}
+                            multiple={true}
+                            maxImages={10}
+                            category="Tour Package"
+                        />
                     </div>
                 );
             default:
@@ -494,67 +415,6 @@ export default function CreatePackagePage() {
                     </div>
                 </div>
             </div>
-
-            {/* Gallery Selection Modal */}
-            {showGallery && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowGallery(false)} />
-                    <div className="relative w-full max-w-4xl glass-card border border-white/10 rounded-[40px] shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300">
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-xl font-bold">Select from Gallery</h3>
-                                <p className="text-xs text-muted-foreground mt-1">Choose images to add to your package</p>
-                            </div>
-                            <button onClick={() => setShowGallery(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
-                            {isFetchingGallery ? (
-                                <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-                                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                                        <div key={i} className="aspect-square rounded-2xl bg-white/5 animate-pulse" />
-                                    ))}
-                                </div>
-                            ) : galleryImages.length > 0 ? (
-                                <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-                                    {galleryImages.map((img) => (
-                                        <div 
-                                            key={img.id} 
-                                            className={`relative aspect-square rounded-2xl overflow-hidden border-2 cursor-pointer transition-all ${
-                                                images.includes(img.url) ? 'border-blue-600 ring-4 ring-blue-600/20' : 'border-transparent hover:border-white/20'
-                                            }`}
-                                            onClick={() => toggleGalleryImage(img.url)}
-                                        >
-                                            <img src={img.url} className="w-full h-full object-cover" />
-                                            {images.includes(img.url) && (
-                                                <div className="absolute top-2 right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                                                    <CheckCircle2 size={14} className="text-white" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-20">
-                                    <ImageIcon size={48} className="mx-auto text-muted-foreground opacity-20 mb-4" />
-                                    <p className="text-muted-foreground">No images found in gallery.</p>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-6 border-t border-white/5 flex justify-end">
-                            <button 
-                                onClick={() => setShowGallery(false)}
-                                className="px-8 py-3 rounded-2xl bg-blue-600 text-white font-bold shadow-xl shadow-blue-600/20 active:scale-95 transition-all"
-                            >
-                                Done Selecting
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

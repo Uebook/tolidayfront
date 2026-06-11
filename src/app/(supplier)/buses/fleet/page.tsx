@@ -7,11 +7,13 @@ import { Bus, Plus, MoreVertical, Users, LayoutGrid, Edit, Trash2, ShieldCheck, 
 import Link from 'next/link';
 import { useState } from 'react';
 import { getAuthUser } from '@/lib/auth';
+import MediaSelector from '@/components/ui/MediaSelector';
 
 export default function FleetPage() {
     const queryClient = useQueryClient();
     const [user] = useState(() => getAuthUser());
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [busImages, setBusImages] = useState<string[]>([]);
 
     const { data: buses = [], isLoading } = useQuery({
         queryKey: ['bus-fleet', user?.busVendorId || user?.bus_vendor_id],
@@ -32,6 +34,7 @@ export default function FleetPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['bus-fleet'] });
             setIsAddModalOpen(false);
+            setBusImages([]);
         }
     });
 
@@ -196,6 +199,7 @@ export default function FleetPage() {
                                     totalSeats: Number(formData.get('totalSeats')),
                                     amenities: (formData.get('amenities') as string).split(',').map(s => s.trim()).filter(Boolean),
                                     gpsDeviceId: formData.get('gpsDeviceId'),
+                                    images: busImages,
                                 };
                                 addBusMutation.mutate(data);
                             }}>
@@ -258,6 +262,19 @@ export default function FleetPage() {
                                         placeholder="WiFi, Luxury Blanket, Water, USB Charging Ports..."
                                     />
                                     <p className="text-[9px] text-white/20 font-bold uppercase tracking-widest ml-1">Separate entries with commas</p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Bus Images</label>
+                                    <div className="bg-white/05 border border-white/05 rounded-2xl p-6 shadow-inner">
+                                        <MediaSelector 
+                                            selectedImages={busImages} 
+                                            onSelect={setBusImages}
+                                            multiple={true}
+                                            maxImages={8}
+                                            category="Bus Vehicle"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-6 pt-6">

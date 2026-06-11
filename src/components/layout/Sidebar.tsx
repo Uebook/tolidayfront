@@ -240,6 +240,7 @@ export default function Sidebar() {
     });
 
     const unreadCount = useMemo(() => {
+        if (!Array.isArray(notifications)) return 0;
         return notifications.filter((n: any) => !n.read).length;
     }, [notifications]);
 

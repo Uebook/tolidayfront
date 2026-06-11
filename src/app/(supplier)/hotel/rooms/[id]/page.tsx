@@ -7,7 +7,7 @@ import api from '@/lib/api';
 import Topbar from '@/components/layout/Topbar';
 import { BedDouble, ArrowLeft, Save, AlertCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import MediaPicker from '@/components/media/MediaPicker';
+import MediaSelector from '@/components/ui/MediaSelector';
 
 export default function EditRoomPage() {
        const router = useRouter();
@@ -270,10 +270,13 @@ export default function EditRoomPage() {
                                                                <label className="text-sm font-medium block mb-1" style={{ color: 'hsl(var(--foreground))' }}>Room Photos</label>
                                                                <p className="text-xs mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Add up to 10 photos of this room category</p>
                                                         </div>
-                                                        <MediaPicker
-                                                               selectedUrls={formData.images}
-                                                               onSelect={(urls) => setFormData({ ...formData, images: urls })}
-                                                        />
+                                                         <MediaSelector
+                                                                selectedImages={formData.images}
+                                                                onSelect={(urls) => setFormData({ ...formData, images: urls })}
+                                                                multiple={true}
+                                                                maxImages={10}
+                                                                category="Hotel Room"
+                                                         />
                                                  </div>
                                           </div>
 

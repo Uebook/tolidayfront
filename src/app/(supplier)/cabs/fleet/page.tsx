@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import Topbar from '@/components/layout/Topbar';
 import { CarFront, Plus, Search, MapPin, Settings, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import MediaSelector from '@/components/ui/MediaSelector';
 
 export default function FleetPage() {
     const queryClient = useQueryClient();
@@ -25,7 +26,8 @@ export default function FleetPage() {
         year: new Date().getFullYear(),
         category: 'SEDAN',
         seatingCapacity: 4,
-        hasAC: true
+        hasAC: true,
+        images: [] as string[]
     });
 
     const createMutation = useMutation({
@@ -34,7 +36,7 @@ export default function FleetPage() {
             queryClient.invalidateQueries({ queryKey: ['cabs-fleet'] });
             setIsCreating(false);
             setNewVehicle({
-                registrationNumber: '', make: '', model: '', year: 2024, category: 'SEDAN', seatingCapacity: 4, hasAC: true
+                registrationNumber: '', make: '', model: '', year: 2024, category: 'SEDAN', seatingCapacity: 4, hasAC: true, images: []
             });
         }
     });
@@ -163,6 +165,17 @@ export default function FleetPage() {
                                         <input type="number" value={newVehicle.year} onChange={e => setNewVehicle({...newVehicle, year: Number(e.target.value)})} className="form-input" />
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <div className="mt-6">
+                                <label className="text-xs font-bold block mb-2">Vehicle Images</label>
+                                <MediaSelector 
+                                    selectedImages={newVehicle.images} 
+                                    onSelect={(urls) => setNewVehicle({...newVehicle, images: urls})}
+                                    multiple={true}
+                                    maxImages={5}
+                                    category="Cab Vehicle"
+                                />
                             </div>
 
                             <div className="flex gap-4 mt-8">
