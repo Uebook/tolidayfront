@@ -17,6 +17,9 @@ export default function AdminCabsPage() {
        const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
        const [activeTab, setActiveTab] = useState<'PROFILE' | 'VEHICLES' | 'BOOKINGS' | 'OFFERS'>('PROFILE');
        const [isAddVehicleModalOpen, setIsAddVehicleModalOpen] = useState(false);
+       const [isEditVendorModalOpen, setIsEditVendorModalOpen] = useState(false);
+       const [isEditVehicleModalOpen, setIsEditVehicleModalOpen] = useState(false);
+       const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
 
        const { data: vendors = [], isLoading } = useQuery({
               queryKey: ['admin-cabs'],
@@ -54,6 +57,29 @@ export default function AdminCabsPage() {
               onSuccess: () => {
                      queryClient.invalidateQueries({ queryKey: ['admin-cab-vendor', selectedVendorId] });
                      toast.success('Vehicle removed successfully');
+              }
+       });
+
+       const updateVendorMutation = useMutation({
+              mutationFn: async (data: any) => {
+                     await api.patch(`/admin/cabs/${selectedVendorId}`, data);
+              },
+              onSuccess: () => {
+                     queryClient.invalidateQueries({ queryKey: ['admin-cab-vendor', selectedVendorId] });
+                     queryClient.invalidateQueries({ queryKey: ['admin-cabs'] });
+                     setIsEditVendorModalOpen(false);
+                     toast.success('Vendor profile updated successfully');
+              }
+       });
+
+       const updateVehicleMutation = useMutation({
+              mutationFn: async ({ vehicleId, data }: { vehicleId: string, data: any }) => {
+                     await api.patch(`/admin/cabs/vehicles/${vehicleId}`, data);
+              },
+              onSuccess: () => {
+                     queryClient.invalidateQueries({ queryKey: ['admin-cab-vendor', selectedVendorId] });
+                     setIsEditVehicleModalOpen(false);
+                     toast.success('Vehicle updated successfully');
               }
        });
 
@@ -153,6 +179,84 @@ export default function AdminCabsPage() {
                                 </div>
                             )}
 
+                            {/* Edit Vendor Modal */}
+                            {isEditVendorModalOpen && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl animate-scaleUp">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Vendor Profile</h3>
+                                            <button onClick={() => setIsEditVendorModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={24} /></button>
+                                        </div>
+                                        <form className="space-y-6" onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            updateVendorMutation.mutate({
+                                                companyName: formData.get('companyName'),
+                                            });
+                                        }}>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
+                                                <input name="companyName" defaultValue={selectedVendor.companyName || selectedVendor.name} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all" />
+                                            </div>
+                                            <button type="submit" disabled={updateVendorMutation.isPending} className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+                                                {updateVendorMutation.isPending ? 'Saving...' : 'Save Details'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Edit Vehicle Modal */}
+                            {isEditVehicleModalOpen && selectedVehicle && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl animate-scaleUp">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Vehicle Details</h3>
+                                            <button onClick={() => setIsEditVehicleModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={24} /></button>
+                                        </div>
+                                        <form className="space-y-6" onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            updateVehicleMutation.mutate({
+                                                vehicleId: selectedVehicle.id,
+                                                data: {
+                                                    make: formData.get('make'),
+                                                    model: formData.get('model'),
+                                                    registrationNumber: formData.get('reg'),
+                                                    category: formData.get('category'),
+                                                }
+                                            });
+                                        }}>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Make</label>
+                                                    <input name="make" defaultValue={selectedVehicle.make} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Model</label>
+                                                    <input name="model" defaultValue={selectedVehicle.model} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Registration</label>
+                                                <input name="reg" defaultValue={selectedVehicle.registrationNumber} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                                                <select name="category" defaultValue={selectedVehicle.category} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900">
+                                                    <option value="SEDAN">Sedan</option>
+                                                    <option value="SUV">SUV</option>
+                                                    <option value="LUXURY">Luxury</option>
+                                                </select>
+                                            </div>
+                                            <button type="submit" disabled={updateVehicleMutation.isPending} className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+                                                {updateVehicleMutation.isPending ? 'Saving...' : 'Save Vehicle'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between mb-8">
                                 <button 
                                        onClick={() => setSelectedVendorId(null)}
@@ -185,7 +289,10 @@ export default function AdminCabsPage() {
                                                                <Car size={48} />
                                                         </div>
                                                         <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{selectedVendor.companyName || selectedVendor.name}</h2>
-                                                        <button className="w-full py-4 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                                        <button 
+                                                            onClick={() => setIsEditVendorModalOpen(true)}
+                                                            className="w-full py-4 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                                        >
                                                             <Edit size={16} /> Edit Profile
                                                         </button>
                                                  </div>
@@ -221,7 +328,13 @@ export default function AdminCabsPage() {
                                                                   </div>
                                                               </div>
                                                               <div className="flex items-center gap-2">
-                                                                  <button className="p-2.5 bg-white text-slate-400 hover:text-emerald-600 hover:shadow-md rounded-xl transition-all">
+                                                                  <button 
+                                                                      onClick={() => {
+                                                                          setSelectedVehicle(vehicle);
+                                                                          setIsEditVehicleModalOpen(true);
+                                                                      }}
+                                                                      className="p-2.5 bg-white text-slate-400 hover:text-emerald-600 hover:shadow-md rounded-xl transition-all"
+                                                                  >
                                                                       <Edit size={16} />
                                                                   </button>
                                                                   <button 

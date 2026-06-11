@@ -19,6 +19,9 @@ export default function AdminTourPartnersPage() {
        const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
        const [activeTab, setActiveTab] = useState<'PROFILE' | 'PACKAGES' | 'HISTORY' | 'OFFERS'>('PROFILE');
        const [isAddPkgModalOpen, setIsAddPkgModalOpen] = useState(false);
+       const [isEditPartnerModalOpen, setIsEditPartnerModalOpen] = useState(false);
+       const [isEditPackageModalOpen, setIsEditPackageModalOpen] = useState(false);
+       const [selectedPackage, setSelectedPackage] = useState<any>(null);
 
        const { data: partners = [], isLoading } = useQuery({
               queryKey: ['admin-tour-partners', statusFilter],
@@ -70,6 +73,29 @@ export default function AdminTourPartnersPage() {
                      if (selectedPartnerId) {
                          queryClient.invalidateQueries({ queryKey: ['admin-partner-detail', selectedPartnerId] });
                      }
+              }
+       });
+
+       const updatePartnerMutation = useMutation({
+              mutationFn: async (data: any) => {
+                     await api.patch(`/admin/tour-partners/${selectedPartnerId}`, data);
+              },
+              onSuccess: () => {
+                     queryClient.invalidateQueries({ queryKey: ['admin-partner-detail', selectedPartnerId] });
+                     queryClient.invalidateQueries({ queryKey: ['admin-tour-partners'] });
+                     setIsEditPartnerModalOpen(false);
+                     toast.success('Partner profile updated successfully');
+              }
+       });
+
+       const updatePackageMutation = useMutation({
+              mutationFn: async ({ packageId, data }: { packageId: string, data: any }) => {
+                     await api.patch(`/admin/tour-partners/packages/${packageId}`, data);
+              },
+              onSuccess: () => {
+                     queryClient.invalidateQueries({ queryKey: ['admin-partner-detail', selectedPartnerId] });
+                     setIsEditPackageModalOpen(false);
+                     toast.success('Tour package updated successfully');
               }
        });
 
@@ -163,6 +189,76 @@ export default function AdminTourPartnersPage() {
                                 </div>
                             )}
 
+                            {/* Edit Partner Modal */}
+                            {isEditPartnerModalOpen && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl animate-scaleUp">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Partner Profile</h3>
+                                            <button onClick={() => setIsEditPartnerModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={24} /></button>
+                                        </div>
+                                        <form className="space-y-6" onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            updatePartnerMutation.mutate({
+                                                businessName: formData.get('businessName'),
+                                            });
+                                        }}>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Agency Name</label>
+                                                <input name="businessName" defaultValue={selectedPartner.businessName || selectedPartner.name} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all" />
+                                            </div>
+                                            <button type="submit" disabled={updatePartnerMutation.isPending} className="w-full py-5 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-purple-600/20 transition-all flex items-center justify-center gap-2">
+                                                {updatePartnerMutation.isPending ? 'Saving...' : 'Save Details'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Edit Package Modal */}
+                            {isEditPackageModalOpen && selectedPackage && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl animate-scaleUp">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Tour Package</h3>
+                                            <button onClick={() => setIsEditPackageModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={24} /></button>
+                                        </div>
+                                        <form className="space-y-6" onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            updatePackageMutation.mutate({
+                                                packageId: selectedPackage.id,
+                                                data: {
+                                                    title: formData.get('title'),
+                                                    duration: formData.get('duration'),
+                                                    basePrice: Number(formData.get('price')),
+                                                    salePrice: Number(formData.get('price')),
+                                                }
+                                            });
+                                        }}>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Package Title</label>
+                                                <input name="title" defaultValue={selectedPackage.title} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Duration</label>
+                                                    <input name="duration" defaultValue={selectedPackage.duration} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sale Price</label>
+                                                    <input name="price" type="number" defaultValue={selectedPackage.salePrice} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all" />
+                                                </div>
+                                            </div>
+                                            <button type="submit" disabled={updatePackageMutation.isPending} className="w-full py-5 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-purple-600/20 transition-all flex items-center justify-center gap-2">
+                                                {updatePackageMutation.isPending ? 'Saving...' : 'Save Package'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between mb-8">
                                 <button 
                                        onClick={() => setSelectedPartnerId(null)}
@@ -196,7 +292,10 @@ export default function AdminTourPartnersPage() {
                                                         </div>
                                                         <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{selectedPartner.businessName || selectedPartner.name}</h2>
                                                         <p className="text-slate-400 font-bold text-sm mb-6 uppercase tracking-widest">{selectedPartner.businessType || 'Tour Operator'}</p>
-                                                        <button className="w-full py-4 bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                                        <button 
+                                                            onClick={() => setIsEditPartnerModalOpen(true)}
+                                                            className="w-full py-4 bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                                        >
                                                             <Edit size={16} /> Edit Profile
                                                         </button>
                                                  </div>
@@ -235,7 +334,13 @@ export default function AdminTourPartnersPage() {
                                                                   </div>
                                                               </div>
                                                               <div className="flex items-center gap-2">
-                                                                  <button className="p-3 bg-white text-slate-400 hover:text-purple-600 hover:shadow-md rounded-xl transition-all">
+                                                                  <button 
+                                                                      onClick={() => {
+                                                                          setSelectedPackage(pkg);
+                                                                          setIsEditPackageModalOpen(true);
+                                                                      }}
+                                                                      className="p-3 bg-white text-slate-400 hover:text-purple-600 hover:shadow-md rounded-xl transition-all"
+                                                                  >
                                                                       <Edit size={18} />
                                                                   </button>
                                                                   <button 

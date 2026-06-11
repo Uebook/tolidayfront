@@ -17,6 +17,9 @@ export default function AdminBusesPage() {
        const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
        const [activeTab, setActiveTab] = useState<'PROFILE' | 'FLEET' | 'BOOKINGS' | 'OFFERS'>('PROFILE');
        const [isAddBusModalOpen, setIsAddBusModalOpen] = useState(false);
+       const [isEditVendorModalOpen, setIsEditVendorModalOpen] = useState(false);
+       const [isEditBusModalOpen, setIsEditBusModalOpen] = useState(false);
+       const [selectedBus, setSelectedBus] = useState<any>(null);
 
        const { data: vendors = [], isLoading } = useQuery({
               queryKey: ['admin-buses', statusFilter],
@@ -68,6 +71,29 @@ export default function AdminBusesPage() {
                      if (selectedVendorId) {
                          queryClient.invalidateQueries({ queryKey: ['admin-bus-vendor', selectedVendorId] });
                      }
+              }
+       });
+
+       const updateVendorMutation = useMutation({
+              mutationFn: async (data: any) => {
+                     await api.patch(`/admin/buses/${selectedVendorId}`, data);
+              },
+              onSuccess: () => {
+                     queryClient.invalidateQueries({ queryKey: ['admin-bus-vendor', selectedVendorId] });
+                     queryClient.invalidateQueries({ queryKey: ['admin-buses'] });
+                     setIsEditVendorModalOpen(false);
+                     toast.success('Vendor profile updated successfully');
+              }
+       });
+
+       const updateBusMutation = useMutation({
+              mutationFn: async ({ busId, data }: { busId: string, data: any }) => {
+                     await api.patch(`/admin/buses/fleet/${busId}`, data);
+              },
+              onSuccess: () => {
+                     queryClient.invalidateQueries({ queryKey: ['admin-bus-vendor', selectedVendorId] });
+                     setIsEditBusModalOpen(false);
+                     toast.success('Bus updated successfully');
               }
        });
 
@@ -164,6 +190,79 @@ export default function AdminBusesPage() {
                                 </div>
                             )}
 
+                            {/* Edit Vendor Modal */}
+                            {isEditVendorModalOpen && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl animate-scaleUp">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Vendor Profile</h3>
+                                            <button onClick={() => setIsEditVendorModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={24} /></button>
+                                        </div>
+                                        <form className="space-y-6" onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            updateVendorMutation.mutate({
+                                                businessName: formData.get('businessName'),
+                                            });
+                                        }}>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Vendor Name</label>
+                                                <input name="businessName" defaultValue={selectedVendor.businessName || selectedVendor.name} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                                            </div>
+                                            <button type="submit" disabled={updateVendorMutation.isPending} className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-2">
+                                                {updateVendorMutation.isPending ? 'Saving...' : 'Save Details'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Edit Bus Modal */}
+                            {isEditBusModalOpen && selectedBus && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl animate-scaleUp">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Bus Details</h3>
+                                            <button onClick={() => setIsEditBusModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={24} /></button>
+                                        </div>
+                                        <form className="space-y-6" onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            updateBusMutation.mutate({
+                                                busId: selectedBus.id,
+                                                data: {
+                                                    registrationNumber: formData.get('reg'),
+                                                    type: formData.get('type'),
+                                                    totalSeats: Number(formData.get('seats')),
+                                                }
+                                            });
+                                        }}>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Registration Number</label>
+                                                <input name="reg" defaultValue={selectedBus.registrationNumber} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bus Type</label>
+                                                    <select name="type" defaultValue={selectedBus.type} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all">
+                                                        <option value="AC_SLEEPER">AC Sleeper</option>
+                                                        <option value="NON_AC_SLEEPER">Non-AC Sleeper</option>
+                                                        <option value="AC_SEATER">AC Seater</option>
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Total Seats</label>
+                                                    <input name="seats" type="number" defaultValue={selectedBus.totalSeats} required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                                                </div>
+                                            </div>
+                                            <button type="submit" disabled={updateBusMutation.isPending} className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-2">
+                                                {updateBusMutation.isPending ? 'Saving...' : 'Save Bus Details'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between mb-8">
                                 <button 
                                        onClick={() => setSelectedVendorId(null)}
@@ -196,7 +295,10 @@ export default function AdminBusesPage() {
                                                                <Bus size={48} />
                                                         </div>
                                                         <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{selectedVendor.businessName || selectedVendor.name}</h2>
-                                                        <button className="w-full py-4 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                                        <button 
+                                                            onClick={() => setIsEditVendorModalOpen(true)}
+                                                            className="w-full py-4 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                                        >
                                                             <Edit size={16} /> Edit Vendor
                                                         </button>
                                                  </div>
@@ -232,7 +334,13 @@ export default function AdminBusesPage() {
                                                                   </div>
                                                               </div>
                                                               <div className="flex items-center gap-2">
-                                                                  <button className="p-2.5 bg-white text-slate-400 hover:text-blue-600 hover:shadow-md rounded-xl transition-all">
+                                                                  <button 
+                                                                      onClick={() => {
+                                                                          setSelectedBus(bus);
+                                                                          setIsEditBusModalOpen(true);
+                                                                      }}
+                                                                      className="p-2.5 bg-white text-slate-400 hover:text-blue-600 hover:shadow-md rounded-xl transition-all"
+                                                                  >
                                                                       <Edit size={16} />
                                                                   </button>
                                                                   <button 
