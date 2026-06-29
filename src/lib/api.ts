@@ -6,8 +6,16 @@ declare var process: {
        }
 };
 
+let baseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+if (baseUrl.endsWith('/')) {
+       baseUrl = baseUrl.slice(0, -1);
+}
+if (baseUrl !== '/api' && !baseUrl.endsWith('/api')) {
+       baseUrl = `${baseUrl}/api`;
+}
+
 const api = axios.create({
-       baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
+       baseURL: baseUrl,
        headers: {
               'Content-Type': 'application/json',
        },
