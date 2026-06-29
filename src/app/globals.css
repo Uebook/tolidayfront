@@ -2,6 +2,20 @@
 @import "tailwindcss";
 @source "../";
 
+@theme {
+  --color-foreground: hsl(var(--foreground));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-background: hsl(var(--background));
+  --color-border: hsl(var(--border));
+  --color-accent: hsl(var(--accent));
+  --color-card: hsl(var(--card));
+  --color-primary: hsl(var(--primary));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-destructive: hsl(var(--destructive));
+}
+
+
 :root {
   --primary: 228 80% 55%;
   --primary-foreground: 0 0% 100%;
@@ -42,6 +56,17 @@
   --gradient-1: rgba(30, 60, 150, 0.08);
   --gradient-2: rgba(0, 150, 200, 0.06);
   --gradient-3: rgba(50, 20, 100, 0.04);
+
+  /* Apple System Tokens */
+  --ios-sheet: rgba(255, 255, 255, 0.65);
+  --ios-platter: rgba(255, 255, 255, 0.45);
+  --ios-border: rgba(0, 0, 0, 0.05);
+  --ios-border-light: rgba(0, 0, 0, 0.03);
+  --ios-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.03);
+  --primary-ios: 219 90% 50%;
+  --success-ios: 142 71% 45%;
+  --warning-ios: 35 92% 50%;
+  --destructive-ios: 354 86% 52%;
 }
 
 .dark {
@@ -83,6 +108,13 @@
   --gradient-1: rgba(30, 60, 150, 0.15);
   --gradient-2: rgba(0, 150, 200, 0.1);
   --gradient-3: rgba(50, 20, 100, 0.08);
+
+  /* Apple System Tokens */
+  --ios-sheet: rgba(20, 22, 35, 0.6);
+  --ios-platter: rgba(10, 12, 22, 0.35);
+  --ios-border: rgba(255, 255, 255, 0.08);
+  --ios-border-light: rgba(255, 255, 255, 0.12);
+  --ios-shadow: 0 15px 50px -15px rgba(0, 0, 0, 0.4);
 }
 
 
@@ -378,4 +410,78 @@ body {
 
 .pulse-dot {
   animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* Apple-style UI Utilities */
+.ios-platter {
+  background: var(--ios-platter);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 0.5px solid var(--ios-border);
+  border-top-color: var(--ios-border-light);
+  box-shadow: var(--ios-shadow);
+}
+
+.ios-sheet {
+  background: var(--ios-sheet);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 0.5px solid var(--ios-border);
+  box-shadow: var(--ios-shadow);
+}
+
+.ios-spring {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ios-tap-scale {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ios-tap-scale:active {
+  transform: scale(0.96);
+}
+
+/* Clean iOS Toggle Switch */
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 51px;
+  height: 31px;
+}
+
+.ios-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ios-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: rgba(120, 120, 128, 0.16);
+  border-radius: 31px;
+  transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ios-switch-slider:before {
+  content: "";
+  position: absolute;
+  height: 27px;
+  width: 27px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 3px 1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ios-switch input:checked + .ios-switch-slider {
+  background-color: hsl(var(--accent));
+}
+
+.ios-switch input:checked + .ios-switch-slider:before {
+  transform: translateX(20px);
 }

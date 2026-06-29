@@ -46,9 +46,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function DashboardPage() {
     const [user, setUser] = useState<any>(null);
+    const [isDemoMode, setIsDemoMode] = useState(true);
+    const [currentDate, setCurrentDate] = useState('');
 
     useEffect(() => {
         setUser(getAuthUser());
+        const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        setCurrentDate(new Date().toLocaleDateString('en-US', options));
     }, []);
 
     const { data: summary, isLoading } = useQuery({
@@ -67,195 +71,303 @@ export default function DashboardPage() {
         );
     }
 
+    const demoSummary = {
+        revenue: 342850,
+        checkInsToday: 12,
+        pendingBookings: 5,
+        cancellations: 2,
+        activeStay: 38,
+        checkOutsToday: 8,
+        adr: 6850,
+        revpar: 4795,
+        recentBookings: [
+            { ref: 'TX-4920', guest: 'Rahul Sharma', room: 'Deluxe Room', checkIn: '2026-06-29', status: 'checked_in', amount: '₹14,500' },
+            { ref: 'TX-4919', guest: 'Ananya Iyer', room: 'Executive Suite', checkIn: '2026-06-29', status: 'confirmed', amount: '₹22,000' },
+            { ref: 'TX-4918', guest: 'Amit Patel', room: 'Standard Room', checkIn: '2026-06-29', status: 'confirmed', amount: '₹7,200' },
+            { ref: 'TX-4917', guest: 'David Miller', room: 'Deluxe Room', checkIn: '2026-06-28', status: 'checked_in', amount: '₹14,500' },
+            { ref: 'TX-4916', guest: 'Sneha Reddy', room: 'Standard Room', checkIn: '2026-06-28', status: 'cancelled', amount: '₹7,200' },
+        ],
+        revenueTrend: [
+            { day: 'Mon', revenue: 42000, bookings: 4 },
+            { day: 'Tue', revenue: 38000, bookings: 3 },
+            { day: 'Wed', revenue: 52000, bookings: 5 },
+            { day: 'Thu', revenue: 48000, bookings: 4 },
+            { day: 'Fri', revenue: 65000, bookings: 6 },
+            { day: 'Sat', revenue: 72000, bookings: 7 },
+            { day: 'Sun', revenue: 59000, bookings: 5 },
+        ]
+    };
+
+    const activeSummary = isDemoMode ? demoSummary : (summary || {
+        revenue: 0,
+        checkInsToday: 0,
+        pendingBookings: 0,
+        cancellations: 0,
+        activeStay: 0,
+        checkOutsToday: 0,
+        adr: 0,
+        revpar: 0,
+        recentBookings: [],
+        revenueTrend: [
+            { day: 'Mon', revenue: 0 },
+            { day: 'Tue', revenue: 0 },
+            { day: 'Wed', revenue: 0 },
+            { day: 'Thu', revenue: 0 },
+            { day: 'Fri', revenue: 0 },
+            { day: 'Sat', revenue: 0 },
+            { day: 'Sun', revenue: 0 },
+        ]
+    });
+
     const stats = [
         {
             label: "Total Revenue",
-            value: `₹${summary?.revenue?.toLocaleString() || 0}`,
+            value: `₹${activeSummary.revenue.toLocaleString()}`,
             change: 'All time',
             up: true,
-            icon: TrendingUp,
-            color: 'hsl(199 89% 48%)',
-            bg: 'hsl(199 89% 48% / 0.1)',
+            icon: DollarSign,
+            color: 'hsl(219 90% 50%)',
+            bg: 'rgba(59,130,246,0.08)',
+            glow: 'hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)] border-blue-500/10',
         },
         {
             label: 'Check-ins Today',
-            value: summary?.checkInsToday || 0,
+            value: activeSummary.checkInsToday,
             change: 'Scheduled',
             up: true,
             icon: BedDouble,
             color: 'hsl(142 71% 45%)',
-            bg: 'hsl(142 71% 45% / 0.1)',
+            bg: 'rgba(16,185,129,0.08)',
+            glow: 'hover:shadow-[0_12px_30px_rgba(16,185,129,0.12)] border-emerald-500/10',
         },
         {
             label: 'Pending Bookings',
-            value: summary?.pendingBookings || 0,
+            value: activeSummary.pendingBookings,
             change: 'Needs attention',
             up: false,
             icon: Clock,
             color: 'hsl(38 92% 50%)',
-            bg: 'hsl(38 92% 50% / 0.1)',
+            bg: 'rgba(245,158,11,0.08)',
+            glow: 'hover:shadow-[0_12px_30px_rgba(245,158,11,0.12)] border-amber-500/10',
         },
         {
             label: 'Cancellations',
-            value: summary?.cancellations || 0,
+            value: activeSummary.cancellations,
             change: 'Recent',
             up: false,
             icon: XCircle,
             color: 'hsl(0 84% 60%)',
-            bg: 'hsl(0 84% 60% / 0.1)',
+            bg: 'rgba(239,68,68,0.08)',
+            glow: 'hover:shadow-[0_12px_30px_rgba(239,68,68,0.12)] border-rose-500/10',
         },
         {
             label: 'Active Stays',
-            value: summary?.activeStay || 0,
+            value: activeSummary.activeStay,
             change: 'Guests in-house',
             up: true,
             icon: Users,
-            color: 'hsl(225 70% 65%)',
-            bg: 'hsl(225 70% 65% / 0.1)',
+            color: 'hsl(262 83% 58%)',
+            bg: 'rgba(139,92,246,0.08)',
+            glow: 'hover:shadow-[0_12px_30px_rgba(139,92,246,0.12)] border-violet-500/10',
         },
         {
             label: 'Check-outs Today',
-            value: summary?.checkOutsToday || 0,
+            value: activeSummary.checkOutsToday,
             change: 'Rooms clearing',
             up: null,
             icon: CalendarDays,
-            color: 'hsl(var(--muted-foreground))',
-            bg: 'var(--glass-border-light)',
+            color: 'hsl(200 15% 45%)',
+            bg: 'rgba(100,116,139,0.08)',
+            glow: 'hover:shadow-[0_12px_30px_rgba(100,116,139,0.12)] border-slate-500/10',
         },
         {
             label: 'ADR',
-            value: `₹${summary?.adr?.toLocaleString() || 0}`,
+            value: `₹${activeSummary.adr.toLocaleString()}`,
             change: 'Avg Daily Rate',
             up: true,
             icon: DollarSign,
-            color: 'hsl(262 83% 58%)',
-            bg: 'hsl(262 83% 58% / 0.1)',
+            color: 'hsl(292 84% 60%)',
+            bg: 'rgba(168,85,247,0.08)',
+            glow: 'hover:shadow-[0_12px_30px_rgba(168,85,247,0.12)] border-purple-500/10',
         },
         {
             label: 'RevPAR',
-            value: `₹${summary?.revpar?.toLocaleString() || 0}`,
+            value: `₹${activeSummary.revpar.toLocaleString()}`,
             change: 'Per Available Room',
             up: true,
             icon: TrendingUp,
-            color: 'hsl(343 81% 55%)',
-            bg: 'hsl(343 81% 55% / 0.1)',
+            color: 'hsl(326 86% 55%)',
+            bg: 'rgba(236,72,153,0.08)',
+            glow: 'hover:shadow-[0_12px_30px_rgba(236,72,153,0.12)] border-pink-500/10',
         },
     ];
 
-    const revenueChartData = summary?.revenueTrend || [];
-    const recentBookings = summary?.recentBookings || [];
+    const revenueChartData = activeSummary.revenueTrend;
+    const recentBookings = activeSummary.recentBookings;
 
     return (
-        <div>
+        <div className="min-h-full">
             <Topbar title="Dashboard Overview" subtitle="Welcome back, here's what's happening today" />
-            <div className="p-8 space-y-8 animate-fadeIn max-w-[1600px] mx-auto">
+            <div className="p-6 md:p-8 space-y-6 md:space-y-8 animate-fadeIn max-w-[1600px] mx-auto">
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-6">
+                {/* Sub Header / Control panel widget */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 rounded-3xl bg-white/40 dark:bg-slate-900/30 backdrop-blur-xl border border-border/10 gap-4">
+                    <div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Current Date</div>
+                        <div className="text-sm font-extrabold text-foreground">{currentDate || 'Loading date...'}</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Demo Preview</span>
+                        <label className="ios-switch">
+                            <input 
+                                type="checkbox" 
+                                checked={isDemoMode}
+                                onChange={(e) => setIsDemoMode(e.target.checked)}
+                            />
+                            <span className="ios-switch-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                {/* Stats Grid - iOS Widgets Style */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 md:gap-5">
                     {stats.map((stat) => (
-                        <div key={stat.label} className="stat-card p-4">
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="p-2 rounded-lg" style={{ background: stat.bg }}>
-                                    <stat.icon size={16} style={{ color: stat.color }} />
+                        <div key={stat.label} className={`ios-platter p-5 rounded-[24px] flex flex-col justify-between hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.01)] border ${stat.glow}`}>
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="p-2.5 rounded-full flex items-center justify-center shadow-inner" style={{ background: stat.bg }}>
+                                    <stat.icon size={15} style={{ color: stat.color }} />
                                 </div>
                                 {stat.up !== null && (
-                                    stat.up
-                                        ? <ArrowUpRight size={14} style={{ color: 'hsl(142 71% 45%)' }} />
-                                        : <ArrowDownRight size={14} style={{ color: 'hsl(0 84% 60%)' }} />
+                                    <div className={`flex items-center text-[10px] font-bold ${stat.up ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        {stat.up
+                                            ? <ArrowUpRight size={12} className="stroke-[3]" />
+                                            : <ArrowDownRight size={12} className="stroke-[3]" />
+                                        }
+                                    </div>
                                 )}
                             </div>
-                            <div className="text-xl font-bold text-[hsl(var(--foreground))]">{stat.value}</div>
-                            <div className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</div>
-                            <div className="text-xs mt-1" style={{ color: stat.up ? 'hsl(142 71% 45%)' : stat.up === null ? 'hsl(var(--muted-foreground))' : 'hsl(0 84% 60%)' }}>
-                                {stat.change}
+                            <div>
+                                <div className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest leading-none mb-1.5">{stat.label}</div>
+                                <div className="text-xl md:text-2xl font-black tracking-tight text-foreground leading-none">{stat.value}</div>
+                                <div className="text-[10px] font-bold mt-2" style={{ color: stat.up ? 'hsl(142 71% 45%)' : stat.up === null ? 'hsl(var(--muted-foreground))' : 'hsl(0 84% 60%)' }}>
+                                    {stat.change}
+                                </div>
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Charts Row */}
+                {/* Charts Row - Apple Health/Summary Style */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                     {/* Revenue Chart */}
-                    <div className="glass-card p-5 xl:col-span-2">
-                        <div className="flex items-center justify-between mb-5">
+                    <div className="ios-sheet p-6 rounded-[28px] border border-border/10 shadow-[0_12px_40px_rgba(0,0,0,0.02)] xl:col-span-2">
+                        <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h3 className="font-semibold text-[hsl(var(--foreground))]">Revenue & Bookings</h3>
-                                <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Last 7 days</p>
+                                <h3 className="font-extrabold text-sm uppercase tracking-wider text-muted-foreground/60">Revenue & Bookings</h3>
+                                <p className="text-2xl font-black tracking-tight text-foreground mt-1">₹{activeSummary.revenue.toLocaleString()}</p>
                             </div>
-                            <span className="badge badge-success">+18% vs last week</span>
+                            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">+18% vs last week</span>
                         </div>
                         <ResponsiveContainer width="100%" height={260}>
                             <AreaChart data={revenueChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="hsl(199 89% 48%)" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="hsl(199 89% 48%)" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="hsl(219 90% 50%)" stopOpacity={0.25} />
+                                        <stop offset="95%" stopColor="hsl(219 90% 50%)" stopOpacity={0} />
                                     </linearGradient>
+                                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feGaussianBlur stdDeviation="5" result="blur" />
+                                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                    </filter>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border-light)" />
-                                <XAxis dataKey="day" tick={{ fill: 'hsl(222 15% 55%)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fill: 'hsl(222 15% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.03)" vertical={false} />
+                                <XAxis dataKey="day" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
                                 <Tooltip content={<CustomTooltip />} />
-                                <Area type="monotone" dataKey="revenue" stroke="hsl(199 89% 48%)" strokeWidth={2} fill="url(#colorRevenue)" />
+                                <Area type="monotone" dataKey="revenue" stroke="hsl(219 90% 50%)" strokeWidth={4} fill="url(#colorRevenue)" filter="url(#glow)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Occupancy Summary */}
-                    <div className="glass-card p-5">
-                        <div className="mb-5">
-                            <h3 className="font-semibold text-[hsl(var(--foreground))]">Occupancy Summary</h3>
-                            <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Current status</p>
+                    {/* Occupancy Summary Activity Ring */}
+                    <div className="ios-sheet p-6 rounded-[28px] border border-border/10 shadow-[0_12px_40px_rgba(0,0,0,0.02)]">
+                        <div className="mb-6">
+                            <h3 className="font-extrabold text-sm uppercase tracking-wider text-muted-foreground/60">Occupancy Ring</h3>
+                            <p className="text-xs text-muted-foreground font-semibold mt-1">Live guests in-house</p>
                         </div>
-                        <div className="flex flex-col items-center justify-center h-[260px] space-y-4">
-                            <div className="relative h-32 w-32">
-                                <svg className="h-full w-full" viewBox="0 0 100 100">
-                                    <circle className="stroke-[hsl(var(--muted-foreground))] opacity-20" strokeWidth="8" fill="transparent" r="40" cx="50" cy="50" />
-                                    <circle className="stroke-[hsl(142 71% 45%)]" strokeWidth="8" strokeDasharray={`${summary?.activeStay || 0} 251`} strokeLinecap="round" fill="transparent" r="40" cx="50" cy="50" />
+                        <div className="flex flex-col items-center justify-center h-[240px] space-y-5">
+                            <div className="relative h-36 w-36">
+                                <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
+                                    <defs>
+                                        <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#34d399" />
+                                            <stop offset="100%" stopColor="#059669" />
+                                        </linearGradient>
+                                        <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#22d3ee" />
+                                            <stop offset="100%" stopColor="#06b6d4" />
+                                        </linearGradient>
+                                    </defs>
+                                    {/* Outer Ring: Active Stays (Capacity 50) */}
+                                    <circle className="stroke-black/5 dark:stroke-white/5" strokeWidth="8" fill="transparent" r="40" cx="50" cy="50" />
+                                    <circle className="stroke-[url(#emeraldGradient)]" strokeWidth="8" strokeDasharray={`${Math.min((activeSummary.activeStay / 50) * 251, 251)} 251`} strokeLinecap="round" fill="transparent" r="40" cx="50" cy="50" style={{ filter: 'drop-shadow(0 2px 8px rgba(16,185,129,0.25))' }} />
+                                    
+                                    {/* Inner Ring: Check-ins Progress (Target 15) */}
+                                    <circle className="stroke-black/5 dark:stroke-white/5" strokeWidth="8" fill="transparent" r="28" cx="50" cy="50" />
+                                    <circle className="stroke-[url(#cyanGradient)]" strokeWidth="8" strokeDasharray={`${Math.min((activeSummary.checkInsToday / 15) * 175, 175)} 175`} strokeLinecap="round" fill="transparent" r="28" cx="50" cy="50" style={{ filter: 'drop-shadow(0 2px 6px rgba(6,180,212,0.25))' }} />
                                 </svg>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="text-2xl font-bold">{summary?.activeStay || 0}</span>
-                                    <span className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">Guests</span>
+                                    <span className="text-3xl font-black tracking-tight text-foreground">{activeSummary.activeStay}</span>
+                                    <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">Active Stays</span>
                                 </div>
                             </div>
-                            <p className="text-sm text-center font-medium">Occupancy trending high</p>
+                            <div className="flex gap-4 text-[10px] font-bold">
+                                <div className="flex items-center gap-1.5 text-emerald-500">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                    <span>Occupancy ({Math.round((activeSummary.activeStay / 50) * 100)}%)</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-cyan-500">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+                                    <span>Check-ins ({Math.round((activeSummary.checkInsToday / 15) * 100)}%)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Recent Bookings */}
-                <div className="glass-card overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--glass-border)]">
-                        <h3 className="font-semibold text-[hsl(var(--foreground))]">Recent Bookings</h3>
-                        <Link href="/hotel/bookings" className="text-xs font-medium" style={{ color: 'hsl(var(--accent))' }}>View all →</Link>
+                {/* Recent Bookings plist widget */}
+                <div className="ios-sheet rounded-[28px] border border-border/10 shadow-[0_12px_40px_rgba(0,0,0,0.02)] overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-5 border-b border-border/10 bg-black/[0.01] dark:bg-white/[0.01]">
+                        <h3 className="font-extrabold text-sm uppercase tracking-wider text-muted-foreground/60">Recent Bookings</h3>
+                        <Link href="/hotel/bookings" className="text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:underline no-underline">View All →</Link>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="data-table">
+                        <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr>
-                                    <th>Ref</th>
-                                    <th>Guest</th>
-                                    <th>Room</th>
-                                    <th>Check-in</th>
-                                    <th>Status</th>
-                                    <th>Amount</th>
+                                <tr className="border-b border-border/5 bg-black/[0.01] dark:bg-white/[0.01]">
+                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reference</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Guest Name</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Room Type</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Check-in Date</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {recentBookings.length > 0 ? (
                                     recentBookings.map((b: any) => (
-                                        <tr key={b.ref} className="cursor-pointer">
-                                            <td className="font-mono text-xs" style={{ color: 'hsl(var(--accent))' }}>{b.ref}</td>
-                                            <td className="font-medium text-[hsl(var(--foreground))]">{b.guest}</td>
-                                            <td style={{ color: 'hsl(var(--muted-foreground))' }}>{b.room}</td>
-                                            <td style={{ color: 'hsl(var(--muted-foreground))' }}>{b.checkIn}</td>
-                                            <td><StatusBadge status={b.status} /></td>
-                                            <td className="font-semibold text-[hsl(var(--foreground))]">{b.amount}</td>
+                                        <tr key={b.ref} className="border-b border-border/5 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors cursor-pointer">
+                                            <td className="px-6 py-4 font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{b.ref}</td>
+                                            <td className="px-6 py-4 text-xs font-bold text-foreground">{b.guest}</td>
+                                            <td className="px-6 py-4 text-xs font-medium text-muted-foreground">{b.room}</td>
+                                            <td className="px-6 py-4 text-xs font-medium text-muted-foreground">{b.checkIn}</td>
+                                            <td className="px-6 py-4"><StatusBadge status={b.status} /></td>
+                                            <td className="px-6 py-4 text-xs font-bold text-foreground text-right">{b.amount}</td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-8 text-[hsl(var(--muted-foreground))]">No recent bookings found</td>
+                                        <td colSpan={6} className="text-center py-10 text-xs font-bold text-muted-foreground">No recent bookings found</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -263,8 +375,8 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {/* Quick Actions Shortcuts */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {[
                         { label: 'Add Booking', href: '/hotel/bookings/add', icon: CheckCircle2, color: 'hsl(142 70% 45%)', bg: 'hsl(142 70% 45% / 0.1)', permission: 'bookings_modify' },
                         { label: 'Update Inventory', href: '/hotel/inventory', icon: CalendarDays, color: 'hsl(195 90% 50%)', bg: 'hsl(195 90% 50% / 0.1)', permission: 'inventory_edit' },
@@ -279,12 +391,12 @@ export default function DashboardPage() {
                         })
                         .map((a) => (
                             <Link key={a.label} href={a.href}
-                                className="glass-card flex items-center gap-4 px-5 py-4 hover:scale-[1.02] transition-transform"
+                                className="ios-platter flex items-center gap-4 px-5 py-4 rounded-[22px] border border-border/10 hover:scale-[1.03] transition-all duration-300 ios-tap-scale shadow-[0_4px_15px_rgba(0,0,0,0.01)] no-underline"
                             >
-                                <div className="p-2.5 rounded-xl" style={{ background: a.bg }}>
-                                    <a.icon size={20} style={{ color: a.color }} />
+                                <div className="p-2.5 rounded-full flex items-center justify-center shadow-inner" style={{ background: a.bg }}>
+                                    <a.icon size={16} style={{ color: a.color }} />
                                 </div>
-                                <span className="text-[15px] font-semibold text-[hsl(var(--foreground))]">{a.label}</span>
+                                <span className="text-xs font-bold text-foreground uppercase tracking-wider">{a.label}</span>
                             </Link>
                         ))}
                 </div>
@@ -292,3 +404,4 @@ export default function DashboardPage() {
         </div>
     );
 }
+

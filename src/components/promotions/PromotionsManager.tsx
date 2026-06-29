@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import Topbar from '@/components/layout/Topbar';
 import { Tag, Plus, Target, Clock, MapPin, Zap, X, Save, MoreVertical, Edit2, Trash2, Power } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 type PromoType = 'BASIC' | 'EARLY_BIRD' | 'LAST_MINUTE' | 'GEO_TARGETED';
 
@@ -16,6 +17,11 @@ interface PromotionsManagerProps {
 export default function PromotionsManager({ verticalLabel, dateTypeLabel }: PromotionsManagerProps) {
     const queryClient = useQueryClient();
     const [isCreating, setIsCreating] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     
     // Form state
     const [name, setName] = useState('');
@@ -86,17 +92,17 @@ export default function PromotionsManager({ verticalLabel, dateTypeLabel }: Prom
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-full">
             <Topbar title={`${verticalLabel} Promotions`} subtitle={`Manage targeted campaigns to increase your ${verticalLabel.toLowerCase()} sales.`} />
-            <div className="max-w-7xl mx-auto p-8 space-y-8 animate-fadeIn">
+            <div className="max-w-[1600px] mx-auto p-6 md:p-8 space-y-6 md:space-y-8 animate-fadeIn">
 
                 <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-slate-900">Active Campaigns</h3>
+                    <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Active Campaigns</h3>
                     <button 
                         onClick={() => setIsCreating(true)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-4 py-2.5 text-xs transition-all ios-tap-scale shadow-[0_4px_12px_rgba(37,99,235,0.2)] flex items-center gap-2 cursor-pointer"
                     >
-                        <Plus size={18} /> Create New Campaign
+                        <Plus size={15} /> Create New Campaign
                     </button>
                 </div>
 
@@ -104,55 +110,55 @@ export default function PromotionsManager({ verticalLabel, dateTypeLabel }: Prom
                     {promotions.map((promo: any) => {
                         const config = typeConfig[promo.type as PromoType] || typeConfig.BASIC;
                         return (
-                            <div key={promo.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group">
-                                <div className="p-6 flex-1">
-                                    <div className="flex items-start justify-between mb-6">
-                                        <div className={`p-3 rounded-xl ${config.bg} ${config.color}`}>
-                                            <config.icon size={24} />
+                            <div key={promo.id} className="ios-platter rounded-[24px] border border-border/10 flex flex-col hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.01)] overflow-hidden group">
+                                <div className="p-5 md:p-6 flex-1">
+                                    <div className="flex items-start justify-between mb-5">
+                                        <div className={`p-3 rounded-2xl shadow-inner ${config.bg} ${config.color}`}>
+                                            <config.icon size={20} />
                                         </div>
-                                        <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${promo.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                                        <div className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest ${promo.isActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'}`}>
                                             {promo.isActive ? 'Active' : 'Paused'}
                                         </div>
                                     </div>
 
-                                    <h4 className="text-lg font-bold text-slate-900 mb-1">{promo.name}</h4>
-                                    <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">{config.label}</p>
+                                    <h4 className="text-base font-extrabold text-foreground mb-1 tracking-tight">{promo.name}</h4>
+                                    <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-4">{config.label}</p>
 
-                                    <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-slate-500">Discount</span>
-                                            <span className="font-bold text-slate-900">{promo.discountPercentage}% OFF</span>
+                                    <div className="space-y-2.5 p-4 bg-black/[0.02] dark:bg-white/[0.02] border border-border/5 rounded-2xl text-xs font-semibold text-foreground/80">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Discount</span>
+                                            <span className="font-extrabold text-foreground">{promo.discountPercentage}% OFF</span>
                                         </div>
                                         {promo.type === 'EARLY_BIRD' && (
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-slate-500">Rule</span>
-                                                <span className="font-medium text-slate-900">Book {promo.minAdvanceDays}+ days prior</span>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-muted-foreground">Rule</span>
+                                                <span className="font-bold text-foreground">Book {promo.minAdvanceDays}+ days prior</span>
                                             </div>
                                         )}
                                         {promo.type === 'LAST_MINUTE' && (
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-slate-500">Rule</span>
-                                                <span className="font-medium text-slate-900">Book within {promo.maxAdvanceDays} days</span>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-muted-foreground">Rule</span>
+                                                <span className="font-bold text-foreground">Book within {promo.maxAdvanceDays} days</span>
                                             </div>
                                         )}
                                         {promo.type === 'GEO_TARGETED' && (
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-slate-500">Region</span>
-                                                <span className="font-medium text-slate-900">{promo.targetRegion}</span>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-muted-foreground">Region</span>
+                                                <span className="font-bold text-foreground">{promo.targetRegion}</span>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-                                    <button className="flex-1 py-2 text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
-                                        <Edit2 size={14} /> Edit
+                                <div className="px-5 py-3.5 border-t border-border/10 flex gap-3 bg-black/[0.01] dark:bg-white/[0.01]">
+                                    <button className="flex-1 py-2 text-xs font-bold bg-white dark:bg-slate-800 border border-border/10 text-muted-foreground hover:text-foreground hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all ios-tap-scale flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <Edit2 size={13} /> Edit
                                     </button>
                                     <button 
                                         onClick={() => toggleStatusMutation.mutate({ id: promo.id, isActive: !promo.isActive })}
-                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 border ${promo.isActive ? 'bg-white border-red-200 text-red-600 hover:bg-red-50' : 'bg-white border-green-200 text-green-600 hover:bg-green-50'}`}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ios-tap-scale flex items-center justify-center gap-1.5 border cursor-pointer ${promo.isActive ? 'bg-white dark:bg-slate-800 border-rose-500/20 text-rose-500 hover:bg-rose-500/10' : 'bg-white dark:bg-slate-800 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10'}`}
                                     >
-                                        <Power size={14} /> {promo.isActive ? 'Pause' : 'Resume'}
+                                        <Power size={13} /> {promo.isActive ? 'Pause' : 'Resume'}
                                     </button>
                                 </div>
                             </div>
@@ -160,59 +166,64 @@ export default function PromotionsManager({ verticalLabel, dateTypeLabel }: Prom
                     })}
 
                     {promotions.length === 0 && !isCreating && (
-                        <div className="col-span-full py-20 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
-                            <Target size={48} className="mx-auto text-slate-300 mb-4" />
-                            <h4 className="text-lg font-bold text-slate-900">No Active Campaigns</h4>
-                            <p className="text-sm text-slate-500 max-w-sm mx-auto mt-2">Start creating targeted discounts to boost your conversion rates and occupancy.</p>
+                        <div className="col-span-full py-20 text-center ios-platter rounded-[28px] border-2 border-dashed border-border/20">
+                            <Target size={44} className="mx-auto text-muted-foreground/40 mb-4" />
+                            <h4 className="text-base font-extrabold text-foreground tracking-tight">No Active Campaigns</h4>
+                            <p className="text-xs text-muted-foreground font-semibold max-w-sm mx-auto mt-2">Start creating targeted discounts to boost your conversion rates and occupancy.</p>
                         </div>
                     )}
                 </div>
 
                 {/* Create Modal */}
-                {isCreating && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsCreating(false)} />
-                        <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-scaleIn">
-                            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
-                                <h3 className="text-xl font-bold text-slate-900">Create Campaign</h3>
-                                <button onClick={() => setIsCreating(false)} className="text-slate-400 hover:text-slate-600">
-                                    <X size={20} />
+                {mounted && isCreating && createPortal(
+                    <div 
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-md p-4 cursor-pointer"
+                        onClick={() => setIsCreating(false)}
+                    >
+                        <div 
+                            className="bg-white dark:bg-slate-900 w-[450px] max-w-full p-6 rounded-[28px] border border-border/15 shadow-2xl space-y-5 animate-scaleIn cursor-default relative z-10"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between pb-3 border-b border-border/10">
+                                <h3 className="text-base font-extrabold text-foreground tracking-tight">Create Campaign</h3>
+                                <button onClick={() => setIsCreating(false)} className="text-muted-foreground hover:text-foreground font-bold p-1 cursor-pointer">
+                                    <X size={18} />
                                 </button>
                             </div>
                             
-                            <div className="p-8 space-y-6">
+                            <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Campaign Name</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Campaign Name</label>
                                     <input 
                                         type="text" 
                                         value={name} 
                                         onChange={e => setName(e.target.value)} 
                                         placeholder="e.g. Early Bird Special" 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                        className="w-full px-4 py-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 focus:bg-white dark:focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/50 outline-none text-xs font-medium transition-all duration-300" 
                                     />
                                 </div>
                                 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Campaign Type</label>
+                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Campaign Type</label>
                                         <select 
                                             value={type} 
                                             onChange={(e) => setType(e.target.value as PromoType)} 
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-4 py-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 focus:bg-white dark:focus:bg-slate-955 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/50 outline-none text-xs font-bold text-foreground transition-all duration-300"
                                         >
-                                            <option value="BASIC">Standard</option>
-                                            <option value="EARLY_BIRD">Early Bird</option>
-                                            <option value="LAST_MINUTE">Last Minute</option>
-                                            <option value="GEO_TARGETED">Geo-Targeted</option>
+                                            <option value="BASIC" className="text-slate-900 bg-white">Standard</option>
+                                            <option value="EARLY_BIRD" className="text-slate-900 bg-white">Early Bird</option>
+                                            <option value="LAST_MINUTE" className="text-slate-900 bg-white">Last Minute</option>
+                                            <option value="GEO_TARGETED" className="text-slate-900 bg-white">Geo-Targeted</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Discount (%)</label>
+                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Discount (%)</label>
                                         <input 
                                             type="number" 
                                             value={discount} 
                                             onChange={e => setDiscount(Number(e.target.value))} 
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                            className="w-full px-4 py-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 focus:bg-white dark:focus:bg-slate-955 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/50 outline-none text-xs font-medium transition-all duration-300" 
                                             min={1} 
                                             max={99} 
                                         />
@@ -220,63 +231,64 @@ export default function PromotionsManager({ verticalLabel, dateTypeLabel }: Prom
                                 </div>
 
                                 {type === 'EARLY_BIRD' && (
-                                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-2">
-                                        <label className="text-xs font-bold text-blue-700 uppercase tracking-wider">Minimum Advance Days</label>
+                                    <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl space-y-2 animate-fadeIn">
+                                        <label className="block text-[10px] font-bold text-blue-500 uppercase tracking-wider">Minimum Advance Days</label>
                                         <input 
                                             type="number" 
                                             value={minAdvanceDays} 
                                             onChange={e => setMinAdvanceDays(Number(e.target.value))} 
-                                            className="w-full bg-white border border-blue-200 rounded-lg px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                            className="w-full px-4 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500" 
                                         />
-                                        <p className="text-[10px] text-blue-600 font-medium">Guest must book at least this many days before {dateTypeLabel.toLowerCase()}.</p>
+                                        <p className="text-[9px] text-blue-500/80 font-bold leading-normal">Guest must book at least this many days before {dateTypeLabel.toLowerCase()}.</p>
                                     </div>
                                 )}
 
                                 {type === 'LAST_MINUTE' && (
-                                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl space-y-2">
-                                        <label className="text-xs font-bold text-orange-700 uppercase tracking-wider">Maximum Advance Days</label>
+                                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-2 animate-fadeIn">
+                                        <label className="block text-[10px] font-bold text-orange-500 uppercase tracking-wider">Maximum Advance Days</label>
                                         <input 
                                             type="number" 
                                             value={maxAdvanceDays} 
                                             onChange={e => setMaxAdvanceDays(Number(e.target.value))} 
-                                            className="w-full bg-white border border-orange-200 rounded-lg px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                            className="w-full px-4 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500" 
                                         />
-                                        <p className="text-[10px] text-orange-600 font-medium">Guest must book within this many days of {dateTypeLabel.toLowerCase()}.</p>
+                                        <p className="text-[9px] text-orange-500/80 font-bold leading-normal">Guest must book within this many days of {dateTypeLabel.toLowerCase()}.</p>
                                     </div>
                                 )}
 
                                 {type === 'GEO_TARGETED' && (
-                                    <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl space-y-2">
-                                        <label className="text-xs font-bold text-purple-700 uppercase tracking-wider">Target Region / City</label>
+                                    <div className="p-4 bg-purple-500/5 border border-purple-500/10 rounded-2xl space-y-2 animate-fadeIn">
+                                        <label className="block text-[10px] font-bold text-purple-500 uppercase tracking-wider">Target Region / City</label>
                                         <input 
                                             type="text" 
                                             value={targetRegion} 
                                             onChange={e => setTargetRegion(e.target.value)} 
-                                            className="w-full bg-white border border-purple-200 rounded-lg px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                            className="w-full px-4 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500" 
                                             placeholder="e.g. Delhi, Mumbai" 
                                         />
-                                        <p className="text-[10px] text-purple-600 font-medium">Only users from this region will see the discount.</p>
+                                        <p className="text-[9px] text-purple-500/80 font-bold leading-normal">Only users from this region will see the discount.</p>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-border/10">
                                 <button 
                                     onClick={() => setIsCreating(false)}
-                                    className="px-4 py-2 text-slate-600 font-medium hover:text-slate-800 transition-colors"
+                                    className="px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all ios-tap-scale cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     onClick={() => createMutation.mutate()}
                                     disabled={!name || createMutation.isPending}
-                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-5 py-2 text-xs transition-all ios-tap-scale shadow-[0_4px_12px_rgba(37,99,235,0.2)] disabled:opacity-50 cursor-pointer"
                                 >
                                     {createMutation.isPending ? 'Launching...' : 'Launch Campaign'}
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </div>
         </div>

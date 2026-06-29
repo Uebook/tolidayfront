@@ -43,27 +43,27 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
     const unreadCount = notifications.filter((n: any) => !n.read).length;
 
     return (
-        <header className="sticky top-0 z-40 flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 shadow-sm">
+        <header className="sticky top-0 z-40 flex items-center justify-between px-8 py-4 bg-white/40 dark:bg-slate-900/30 backdrop-blur-md border-b border-border/10">
             <div className="animate-fadeIn">
-                <h1 className="text-xl font-bold text-slate-900 leading-tight">{title}</h1>
-                {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+                <h1 className="text-lg font-extrabold text-foreground tracking-tight leading-tight">{title}</h1>
+                {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
             </div>
 
             <div className="flex items-center gap-4">
                 {/* Search */}
                 <div className="relative hidden md:block group">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-blue-500" />
                     <input
                         placeholder="Search..."
-                        className="w-64 bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+                        className="w-64 bg-black/[0.03] dark:bg-white/[0.04] border border-border/10 rounded-full pl-10 pr-4 py-2 text-xs text-foreground placeholder-muted-foreground/50 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500/50 outline-none transition-all duration-300"
                     />
                 </div>
 
                 {/* Notifications */}
-                <button className="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200">
-                    <Bell size={20} />
+                <button className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-all border border-transparent hover:border-border/10 active:scale-95 duration-200">
+                    <Bell size={18} />
                     {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600 border-2 border-white" />
+                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 border-2 border-white dark:border-slate-900 animate-pulse" />
                     )}
                 </button>
 
@@ -71,45 +71,45 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
                 <div className="relative">
                     <button 
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className={`flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-lg border transition-all ${isProfileOpen ? 'bg-slate-50 border-slate-300 shadow-inner' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
+                        className={`flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-xl border transition-all duration-300 ios-tap-scale ${isProfileOpen ? 'bg-black/5 dark:bg-white/5 border-border/20 shadow-inner' : 'bg-transparent border-border/10 hover:bg-black/5 dark:hover:bg-white/5'}`}
                     >
-                        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-extrabold shadow-sm">
                             {user ? user.name.charAt(0).toUpperCase() : '?'}
                         </div>
                         <div className="hidden lg:block text-left">
-                            <div className="text-sm font-bold text-slate-900 leading-none">{user ? user.name : 'User'}</div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{user ? user.role : 'Guest'}</div>
+                            <div className="text-xs font-bold text-foreground leading-none">{user ? user.name : 'User'}</div>
+                            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1 leading-none">{user ? user.role : 'Guest'}</div>
                         </div>
-                        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={12} className={`text-muted-foreground transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Profile Dropdown */}
                     {isProfileOpen && (
                         <>
                             <div className="fixed inset-0 z-[-1]" onClick={() => setIsProfileOpen(false)} />
-                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-slate-200 shadow-xl py-2 animate-scaleIn overflow-hidden">
-                                <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-100">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Signed in as</p>
-                                    <p className="text-sm font-bold text-slate-900 truncate mt-0.5">{user?.email || 'user@example.com'}</p>
+                            <div className="absolute right-0 mt-2 w-60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-2xl border border-border/15 shadow-xl py-2 animate-scaleIn overflow-hidden z-50">
+                                <div className="px-4 py-3 bg-black/[0.01] dark:bg-white/[0.01] border-b border-border/10">
+                                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Signed in as</p>
+                                    <p className="text-xs font-bold text-foreground truncate mt-1">{user?.email || 'user@example.com'}</p>
                                 </div>
 
-                                <div className="p-1">
+                                <div className="p-1.5 space-y-0.5">
                                     <Link 
                                         href={`${verticalPrefix}/profile`}
                                         onClick={() => setIsProfileOpen(false)}
-                                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all font-medium"
+                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs text-muted-foreground hover:bg-blue-600 hover:text-white transition-all duration-200 font-bold no-underline"
                                     >
-                                        <User size={16} /> My Profile
+                                        <User size={14} /> My Profile
                                     </Link>
-                                    <button className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all font-medium">
-                                        <Settings size={16} /> Account Settings
+                                    <button className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-xs text-muted-foreground hover:bg-blue-600 hover:text-white transition-all duration-200 font-bold">
+                                        <Settings size={14} /> Account Settings
                                     </button>
-                                    <div className="h-px bg-slate-100 my-1 mx-2" />
+                                    <div className="h-px bg-border/10 my-1.5 mx-2" />
                                     <button 
                                         onClick={() => logout()}
-                                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 transition-all font-bold"
+                                        className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-xs text-red-500 hover:bg-red-500/10 transition-all duration-200 font-bold"
                                     >
-                                        <LogOut size={16} /> Logout
+                                        <LogOut size={14} /> Logout
                                     </button>
                                 </div>
                             </div>

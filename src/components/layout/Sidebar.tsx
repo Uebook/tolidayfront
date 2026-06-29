@@ -271,82 +271,85 @@ export default function Sidebar() {
 
     return (
         <aside
-            className="flex flex-col h-screen sticky top-0 transition-all duration-300"
+            className="flex flex-col h-full rounded-[28px] border border-border/20 shadow-sm transition-all duration-300 ios-spring bg-white/45 dark:bg-slate-900/30 backdrop-blur-2xl"
             style={{
-                width: collapsed ? '80px' : '280px',
-                background: 'var(--sidebar-bg)',
-                borderRight: '1px solid var(--glass-border)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                boxShadow: '1px 0 20px var(--glass-shadow)'
+                width: collapsed ? '80px' : '260px',
             }}
         >
             {/* Logo */}
-            <div className={`flex items-center gap-3 py-6 border-b ${collapsed ? 'justify-center px-0' : 'px-5'}`} style={{ borderColor: 'var(--glass-border)' }}>
+            <div className={`flex items-center gap-3 py-6 border-b border-border/10 ${collapsed ? 'justify-center px-0' : 'px-5'}`}>
                 <div
-                    className="flex items-center justify-center rounded-xl flex-shrink-0"
+                    className="flex items-center justify-center rounded-xl flex-shrink-0 transition-transform hover:scale-105 active:scale-95 duration-300 cursor-pointer"
                     style={{
-                        width: 42, height: 42,
-                        background: 'linear-gradient(135deg, hsl(228 80% 55%), hsl(195 90% 45%))',
-                        boxShadow: '0 4px 15px rgba(20, 80, 255, 0.3)'
+                        width: 40, height: 40,
+                        background: 'linear-gradient(135deg, hsl(219 90% 50%), hsl(195 90% 45%))',
+                        boxShadow: '0 6px 20px rgba(37, 99, 235, 0.3)'
                     }}
                 >
                     {verticalPrefix === '/packages' ? (
-                        <Map size={22} color="white" />
+                        <Map size={20} color="white" />
                     ) : verticalPrefix === '/buses' ? (
-                        <Bus size={22} color="white" />
+                        <Bus size={20} color="white" />
                     ) : verticalPrefix === '/cabs' ? (
-                        <CarFront size={22} color="white" />
+                        <CarFront size={20} color="white" />
                     ) : (
-                        <Hotel size={22} color="white" />
+                        <Hotel size={20} color="white" />
                     )}
                 </div>
                 {!collapsed && (
                     <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm text-[hsl(var(--foreground))] leading-tight truncate">TolidayTrip</div>
-                        <div className="text-xs truncate" style={{ color: 'hsl(var(--accent))' }}>Extranet Portal</div>
+                        <div className="font-extrabold text-sm text-[hsl(var(--foreground))] tracking-tight leading-tight truncate">TolidayTrip</div>
+                        <div className="text-[10px] uppercase font-bold tracking-wider mt-0.5" style={{ color: 'hsl(var(--accent))' }}>Extranet Portal</div>
                     </div>
                 )}
                 <button
                     onClick={() => setCollapsed(!collapsed)}
-                    className={`p-1 rounded-lg hover:bg-[var(--table-header)] dark:hover:bg-[var(--table-header)] transition-colors ${collapsed ? 'absolute -right-3 top-8 border z-50 shadow-xl' : 'ml-auto'}`}
-                    style={{ color: 'hsl(var(--muted-foreground))', backgroundColor: collapsed ? 'hsl(var(--card))' : 'transparent', borderColor: collapsed ? 'var(--glass-border)' : 'transparent' }}
+                    className={`p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${collapsed ? 'absolute -right-3 top-8 border border-border/20 bg-white dark:bg-slate-900 z-50 shadow-md' : 'ml-auto'}`}
+                    style={{ color: 'hsl(var(--muted-foreground))' }}
                 >
                     <ChevronDown
-                        size={16}
-                        className="transition-transform"
+                        size={14}
+                        className="transition-transform duration-300"
                         style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(90deg)' }}
                     />
                 </button>
             </div>
 
             {!collapsed && user && (
-                <div className="mx-3 mt-3 px-3 py-2 rounded-lg" style={{ background: 'var(--table-header)', border: '1px solid var(--glass-border)' }}>
-                    <div className="text-xs font-medium text-[hsl(var(--foreground))] truncate">{user.hotel_name || user.businessName || 'Business Name'}</div>
-                    <div className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                        {(verticalPrefix === '/packages') ? 'Partner ID' : 'Hotel ID'}: {user.hotel_id || user.tour_partner_id}
+                <div className="mx-4 mt-4 px-4 py-2.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-border/10">
+                    <div className="text-xs font-bold text-[hsl(var(--foreground))] truncate">{user.hotel_name || user.businessName || 'Business Name'}</div>
+                    <div className="text-[10px] font-semibold mt-0.5 text-muted-foreground">
+                        {(verticalPrefix === '/packages') ? 'Partner ID' : 'Hotel ID'}: <span className="font-mono">{user.hotel_id || user.tour_partner_id}</span>
                     </div>
                 </div>
             )}
 
             {/* Nav */}
-            <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+            <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5 scrollbar-thin">
                 {navGroups.map((group) => (
-                    <div key={group.label}>
+                    <div key={group.label} className="space-y-1">
                         {!collapsed && (
-                            <div className="px-3 mb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'hsl(222 25% 40%)' }}>
+                            <div className="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
                                 {group.label}
                             </div>
                         )}
-                        <div className="space-y-0.5">
+                        <div className="space-y-1">
                             {group.items.map((item) => {
                                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                                 return (
-                                    <Link key={item.href} href={item.href} className={`sidebar-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`}>
-                                        <item.icon size={18} className="flex-shrink-0" />
-                                        {!collapsed && <span className="flex-1">{item.label}</span>}
+                                    <Link 
+                                        key={item.href} 
+                                        href={item.href} 
+                                        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ios-spring ios-tap-scale no-underline ${
+                                            isActive 
+                                                ? 'bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.25)]' 
+                                                : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
+                                        } ${collapsed ? 'justify-center px-0' : ''}`}
+                                    >
+                                        <item.icon size={18} className={`flex-shrink-0 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                                        {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
                                         {!collapsed && item.badge && (
-                                            <span className="badge badge-accent text-xs">{item.badge}</span>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white text-blue-600' : 'bg-blue-600/10 text-blue-600'}`}>{item.badge}</span>
                                         )}
                                     </Link>
                                 );
@@ -357,24 +360,24 @@ export default function Sidebar() {
             </nav>
 
             {/* User footer */}
-            <div className="p-3 border-t flex items-center gap-2" style={{ borderColor: 'var(--glass-border)' }}>
-                <Link href={`${verticalPrefix}/profile`} className="flex-1 flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--table-header)] dark:hover:bg-[var(--table-header)] cursor-pointer transition-colors no-underline">
+            <div className="p-3 border-t border-border/10 flex items-center gap-2">
+                <Link href={`${verticalPrefix}/profile`} className="flex-1 flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors no-underline">
                     <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg text-[hsl(var(--foreground))]"
-                        style={{ background: 'linear-gradient(135deg, hsl(225 70% 55%), hsl(199 89% 48%))' }}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-extrabold flex-shrink-0 shadow-sm text-white"
+                        style={{ background: 'linear-gradient(135deg, hsl(219 90% 50%), hsl(195 90% 45%))' }}
                     >
-                        {user ? user.name.charAt(0) : '?'}
+                        {user ? user.name.charAt(0).toUpperCase() : '?'}
                     </div>
                     {!collapsed && user && (
                         <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-[hsl(var(--foreground))] truncate">{user.name}</div>
-                            <div className="text-xs capitalize" style={{ color: 'hsl(var(--muted-foreground))' }}>{user.role}</div>
+                            <div className="text-xs font-bold text-[hsl(var(--foreground))] truncate leading-none">{user.name}</div>
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground mt-1 leading-none">{user.role}</div>
                         </div>
                     )}
                     {!collapsed && !user && (
                         <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-[hsl(var(--foreground))] truncate">Guest</div>
-                            <div className="text-xs capitalize" style={{ color: 'hsl(var(--muted-foreground))' }}>Unauthenticated</div>
+                            <div className="text-xs font-bold text-[hsl(var(--foreground))] truncate leading-none">Guest</div>
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground mt-1 leading-none">Offline</div>
                         </div>
                     )}
                 </Link>
@@ -382,10 +385,10 @@ export default function Sidebar() {
                     {!collapsed && <ThemeToggle />}
                     <button
                         onClick={handleLogout}
-                        className={`p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors ${collapsed ? 'mx-auto' : ''}`}
+                        className={`p-2 rounded-xl hover:bg-red-500/10 text-red-500 transition-colors ios-tap-scale ${collapsed ? 'mx-auto' : ''}`}
                         title="Logout"
                     >
-                        <LogOut size={18} />
+                        <LogOut size={16} />
                     </button>
                 </div>
             </div>
