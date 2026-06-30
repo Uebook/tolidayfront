@@ -77,25 +77,27 @@ export default function PaymentsDashboard() {
         }
     });
 
-    // Calculate running balance and parse descriptions
+    // Calculate net running balance and parse descriptions after commission/GST
     const sortedEntriesDesc = [...ledger].sort(
         (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-    let tempBal = balances.availableBalance || 0;
+    let tempBal = balances.availableBalance - Math.round(balances.totalEarnings * 0.118);
     const computedDesc = sortedEntriesDesc.map((entry: any) => {
         const runningBalance = tempBal;
+        const commAmt = entry.type === 'CREDIT' ? Math.round(Number(entry.amount) * 0.118) : 0;
+        const netAmt = Number(entry.amount) - commAmt;
         if (entry.type === 'CREDIT') {
-            tempBal -= Number(entry.amount);
+            tempBal -= netAmt;
         } else {
-            tempBal += Number(entry.amount);
+            tempBal += netAmt;
         }
         return {
             ...entry,
+            netAmount: netAmt,
             runningBalance,
         };
     });
     const openingBalance = tempBal;
-    const entriesWithBalanceAsc = [...computedDesc].reverse();
 
     // Filter and Pagination States
     const [searchTerm, setSearchTerm] = useState('');
@@ -114,7 +116,7 @@ export default function PaymentsDashboard() {
         const bookingMatch = entry.description.match(/Booking Revenue \(([^)]+)\) - (.*)/);
         if (bookingMatch) {
             refNumber = bookingMatch[1];
-            line1 = `Booking Created : ${bookingMatch[2]} X 1`;
+            line1 = `Booking Created : ${bookingMatch[2]} X 1 (Net of Comm.)`;
             line2 = `BOOKING REF: ${bookingMatch[1]}`;
             line3 = `TRANSACTION STATUS: COMPLETED`;
         } else {
@@ -277,7 +279,7 @@ export default function PaymentsDashboard() {
                                         </div>
                                         <div className="text-xs font-semibold text-[hsl(var(--muted-foreground))] mt-1 flex flex-col gap-1 md:items-end">
                                             <span>Credit Limit: ₹0.00</span>
-                                            <span>Cash A/c Balance: ₹{balances.availableBalance?.toLocaleString()}</span>
+                                            <span>Cash A/c Balance: ₹{Math.max(0, balances.availableBalance - Math.round(balances.totalEarnings * 0.118)).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -353,7 +355,7 @@ export default function PaymentsDashboard() {
                                                                     {entry.type === 'DEBIT' ? `₹${Number(entry.amount).toLocaleString()}` : '-'}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right text-green-500 font-bold">
-                                                                    {entry.type === 'CREDIT' ? `₹${Number(entry.amount).toLocaleString()}` : '-'}
+                                                                    {entry.type === 'CREDIT' ? `₹${Number(entry.netAmount).toLocaleString()}` : '-'}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-slate-100">
                                                                     ₹{entry.runningBalance.toLocaleString()}
