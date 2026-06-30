@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import Topbar from '@/components/layout/Topbar';
 import { DollarSign, ArrowUpRight, ArrowDownRight, Wallet, Receipt, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function PaymentsDashboard() {
     const queryClient = useQueryClient();
@@ -463,7 +464,9 @@ export default function PaymentsDashboard() {
                                                 <td className="px-6 py-4 text-right text-red-500">₹{Number(inv.commissionAmount).toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-right text-[hsl(var(--muted-foreground))]">₹{Number(inv.gstAmount).toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <button className="text-xs font-bold border border-[var(--glass-border)] px-3 py-1 rounded hover:bg-white/5">Download</button>
+                                                    <Link href={`/invoice/${inv.id}`} target="_blank">
+                                                        <button className="text-xs font-bold border border-[var(--glass-border)] px-3 py-1 rounded hover:bg-white/5">Download</button>
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))
