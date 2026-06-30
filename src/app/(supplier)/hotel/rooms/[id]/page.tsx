@@ -116,6 +116,47 @@ export default function EditRoomPage() {
               }));
        };
 
+       // Linked Rooms Logic
+       const { data: rooms = [], refetch: refetchRooms } = useQuery({
+              queryKey: ['hotel-rooms'],
+              queryFn: async () => {
+                     const res = await api.get('/rooms');
+                     return res.data;
+              }
+       });
+       const linkedRooms = rooms.filter((r: any) => r.roomTypeId === id);
+       const [newRoomNumbers, setNewRoomNumbers] = useState('');
+       const [isAddingRooms, setIsAddingRooms] = useState(false);
+
+       const handleAddRooms = async () => {
+              if (!newRoomNumbers.trim()) return;
+              setIsAddingRooms(true);
+              try {
+                     const numbers = newRoomNumbers.split(',').map(n => n.trim()).filter(n => n);
+                     for (const num of numbers) {
+                            if (linkedRooms.find((r: any) => r.roomNumber === num)) continue;
+                            await api.post('/rooms', { roomNumber: num, roomTypeId: id, status: 'AVAILABLE', floor: '' });
+                     }
+                     setNewRoomNumbers('');
+                     refetchRooms();
+              } catch (err) {
+                     alert('Failed to add some rooms. They might already exist or be in use.');
+              } finally {
+                     setIsAddingRooms(false);
+              }
+       };
+
+       const handleRemoveRoom = async (roomId: string) => {
+              if (confirm('Are you sure you want to delete this physical room?')) {
+                     try {
+                            await api.delete(`/rooms/${roomId}`);
+                            refetchRooms();
+                     } catch(err) {
+                            alert('Failed to remove room.');
+                     }
+              }
+       };
+
        if (isLoading) {
               return (
                      <div className="flex items-center justify-center min-h-screen">
@@ -223,6 +264,48 @@ export default function EditRoomPage() {
                                                                value={formData.totalRooms}
                                                                onChange={(e) => setFormData({ ...formData, totalRooms: e.target.value })}
                                                         />
+                                                 </div>
+
+                                                 {/* Linked Rooms Management */}
+                                                 <div className="space-y-4 md:col-span-2 pt-4 border-t border-[var(--glass-border)]">
+                                                        <div>
+                                                               <label className="text-sm font-medium block mb-1" style={{ color: 'hsl(var(--foreground))' }}>Linked Room Numbers</label>
+                                                               <p className="text-xs mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Add actual physical room numbers (e.g., 101, 102, 103) to link them to this category. This generates the actual rooms for housekeeping and bookings.</p>
+                                                        </div>
+                                                        <div className="flex gap-3">
+                                                               <input 
+                                                                      type="text" 
+                                                                      placeholder="Enter room numbers separated by commas..."
+                                                                      className="form-input flex-1"
+                                                                      value={newRoomNumbers}
+                                                                      onChange={e => setNewRoomNumbers(e.target.value)}
+                                                               />
+                                                               <button 
+                                                                      type="button" 
+                                                                      onClick={handleAddRooms}
+                                                                      disabled={isAddingRooms}
+                                                                      className="px-5 py-2.5 bg-[hsl(var(--accent))] text-white rounded-xl text-sm font-bold shadow-md hover:opacity-90 disabled:opacity-50 transition-all"
+                                                               >
+                                                                      {isAddingRooms ? 'Adding...' : 'Link Rooms'}
+                                                               </button>
+                                                        </div>
+                                                        
+                                                        {linkedRooms.length > 0 && (
+                                                               <div className="flex flex-wrap gap-2 mt-4">
+                                                                      {linkedRooms.map((r: any) => (
+                                                                             <div key={r.id} className="flex items-center gap-2 bg-[var(--table-header)] border border-[var(--glass-border)] px-3 py-1.5 rounded-lg text-sm text-[hsl(var(--foreground))]">
+                                                                                    <span className="font-bold">{r.roomNumber}</span>
+                                                                                    <button 
+                                                                                           type="button" 
+                                                                                           onClick={() => handleRemoveRoom(r.id)}
+                                                                                           className="text-red-500 hover:text-red-700 ml-1 transition-colors"
+                                                                                    >
+                                                                                           <Trash2 size={14} />
+                                                                                    </button>
+                                                                             </div>
+                                                                      ))}
+                                                               </div>
+                                                        )}
                                                  </div>
 
                                                  {/* Description */}

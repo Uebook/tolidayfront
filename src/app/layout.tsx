@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="antialiased">
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
             {children}
           </ThemeProvider>
         </QueryClientProvider>

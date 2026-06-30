@@ -248,15 +248,16 @@ export default function AdminSidebar() {
                                    </div>
                             )}
 
-                            <div className={`flex items-center justify-between ${collapsed ? 'flex-col gap-4' : ''}`}>
-                                   <div className="flex items-center gap-2">
-                                          <button
-                                                 onClick={() => setCollapsed(!collapsed)}
-                                                 className="p-2.5 rounded-lg bg-[#2a2a2a] text-slate-400 hover:text-white transition-all"
-                                          >
-                                                 {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-                                          </button>
-                                   </div>
+                             <div className={`flex items-center justify-between ${collapsed ? 'flex-col gap-4' : ''}`}>
+                                    <div className="flex items-center gap-2">
+                                           <button
+                                                  onClick={() => setCollapsed(!collapsed)}
+                                                  className="p-2.5 rounded-lg bg-[#2a2a2a] text-slate-400 hover:text-white transition-all"
+                                           >
+                                                  {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                                           </button>
+                                           {!collapsed && <ThemeToggle />}
+                                    </div>
                                    
                                    <button
                                           onClick={handleLogout}

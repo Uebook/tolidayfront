@@ -59,6 +59,14 @@ export default function HousekeepingPage() {
         }
     });
 
+    const { data: rooms = [] } = useQuery({
+        queryKey: ['hotel-rooms'],
+        queryFn: async () => {
+            const res = await api.get('/rooms');
+            return res.data;
+        }
+    });
+
     // Mutations
     const createMutation = useMutation({
         mutationFn: async (payload: any) => {
@@ -267,11 +275,25 @@ export default function HousekeepingPage() {
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Room Number</label>
                                 <input 
                                     type="text" 
-                                    placeholder="e.g. 101"
+                                    list="room-numbers-list"
+                                    placeholder="Select or type e.g. 101"
                                     value={formData.roomNumber}
-                                    onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        const room = rooms.find((r: any) => String(r.roomNumber) === val);
+                                        setFormData({ 
+                                            ...formData, 
+                                            roomNumber: val,
+                                            roomTypeId: room?.roomTypeId || formData.roomTypeId
+                                        });
+                                    }}
                                     className="w-full px-4 py-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 focus:bg-white dark:focus:bg-slate-950 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/50 outline-none text-xs font-medium transition-all duration-300"
                                 />
+                                <datalist id="room-numbers-list">
+                                    {rooms.map((r: any) => (
+                                        <option key={r.roomNumber} value={r.roomNumber} />
+                                    ))}
+                                </datalist>
                             </div>
 
                             <div>

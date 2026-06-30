@@ -185,18 +185,20 @@ export default function MediaSelector({
                         {/* Header Tabs */}
                         <div className="flex border-b border-[var(--glass-border)] bg-[var(--table-header)]">
                             <button
+                                type="button"
                                 className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 border-b-2 ${activeTab === 'upload' ? 'border-blue-600 text-blue-600 bg-blue-600/5' : 'border-transparent text-muted-foreground hover:text-[hsl(var(--foreground))] hover:bg-black/5'}`}
                                 onClick={() => setActiveTab('upload')}
                             >
                                 <Upload size={18} /> Upload Local File
                             </button>
                             <button
+                                type="button"
                                 className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 border-b-2 ${activeTab === 'gallery' ? 'border-emerald-600 text-emerald-600 bg-emerald-600/5' : 'border-transparent text-muted-foreground hover:text-[hsl(var(--foreground))] hover:bg-black/5'}`}
                                 onClick={() => setActiveTab('gallery')}
                             >
                                 <Grid size={18} /> Choose from Gallery
                             </button>
-                            <button onClick={() => !isUploading && setShowModal(false)} className="absolute top-3 right-4 p-2 text-muted-foreground hover:bg-[var(--glass-border)] rounded-full transition-colors">
+                            <button type="button" onClick={() => !isUploading && setShowModal(false)} className="absolute top-3 right-4 p-2 text-muted-foreground hover:bg-[var(--glass-border)] rounded-full transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -263,6 +265,7 @@ export default function MediaSelector({
                                                             )}
                                                             <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
                                                                 <button
+                                                                    type="button"
                                                                     onClick={() => setPreviewUrl(img.url)}
                                                                     className="p-1.5 bg-black/50 text-white rounded-lg hover:bg-black/80 transition-colors backdrop-blur-md opacity-0 group-hover:opacity-100"
                                                                     title="View Full Image"
@@ -283,6 +286,7 @@ export default function MediaSelector({
                                             <h3 className="font-bold text-lg mb-2">No Images Found</h3>
                                             <p className="text-muted-foreground text-sm">You haven't uploaded any images to your gallery yet.</p>
                                             <button 
+                                                type="button"
                                                 className="mt-6 px-6 py-2 bg-blue-600/10 text-blue-600 font-bold rounded-lg"
                                                 onClick={() => setActiveTab('upload')}
                                             >
@@ -302,12 +306,14 @@ export default function MediaSelector({
                                 </div>
                                 <div className="flex gap-3">
                                     <button 
+                                        type="button"
                                         onClick={() => setShowModal(false)}
                                         className="px-5 py-2.5 rounded-xl font-bold hover:bg-[var(--glass-border)] transition-colors text-sm"
                                     >
                                         Cancel
                                     </button>
                                     <button 
+                                        type="button"
                                         onClick={handleConfirm}
                                         className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg transition-all active:scale-95 text-sm"
                                     >

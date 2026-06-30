@@ -44,6 +44,89 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
+function AnimatedNumber({ value }: { value: number | string }) {
+    const [displayVal, setDisplayVal] = useState<string | number>(value);
+
+    useEffect(() => {
+        const strVal = String(value);
+        const numericStr = strVal.replace(/[^0-9]/g, '');
+        const parsed = parseInt(numericStr, 10);
+        if (isNaN(parsed)) {
+            setDisplayVal(value);
+            return;
+        }
+
+        let start = 0;
+        const end = parsed;
+        const duration = 1000; // 1 second animation
+        const startTime = performance.now();
+
+        const update = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease out quad
+            const ease = progress * (2 - progress);
+            const current = Math.floor(start + (end - start) * ease);
+            
+            if (strVal.startsWith('₹')) {
+                setDisplayVal(`₹${current.toLocaleString()}`);
+            } else {
+                setDisplayVal(current.toLocaleString());
+            }
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        };
+        requestAnimationFrame(update);
+    }, [value]);
+
+    return <span>{displayVal}</span>;
+}
+
+function Sparkline({ points, color }: { points: number[]; color: string }) {
+    if (!points || points.length === 0) return null;
+    const max = Math.max(...points);
+    const min = Math.min(...points);
+    const range = max - min || 1;
+    const height = 24;
+    const width = 80;
+    const padding = 2;
+    
+    const coordinates = points.map((p, i) => {
+        const x = (i / (points.length - 1)) * (width - padding * 2) + padding;
+        const y = height - ((p - min) / range) * (height - padding * 2) - padding;
+        return `${x},${y}`;
+    });
+    
+    const pathD = `M ${coordinates.join(' L ')}`;
+    
+    return (
+        <svg className="w-20 h-6 overflow-visible" viewBox={`0 0 ${width} ${height}`}>
+            <style>{`
+                @keyframes drawPath {
+                    to {
+                        stroke-dashoffset: 0;
+                    }
+                }
+            `}</style>
+            <path
+                d={pathD}
+                fill="none"
+                stroke={color}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                    strokeDasharray: 120,
+                    strokeDashoffset: 120,
+                    animation: 'drawPath 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards'
+                }}
+            />
+        </svg>
+    );
+}
+
 export default function DashboardPage() {
     const [user, setUser] = useState<any>(null);
     const [isDemoMode, setIsDemoMode] = useState(true);
@@ -129,6 +212,7 @@ export default function DashboardPage() {
             color: 'hsl(219 90% 50%)',
             bg: 'rgba(59,130,246,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)] border-blue-500/10',
+            sparklinePoints: [30, 45, 35, 60, 50, 75, 90],
         },
         {
             label: 'Check-ins Today',
@@ -139,6 +223,7 @@ export default function DashboardPage() {
             color: 'hsl(142 71% 45%)',
             bg: 'rgba(16,185,129,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(16,185,129,0.12)] border-emerald-500/10',
+            sparklinePoints: [5, 8, 12, 6, 10, 15, 12],
         },
         {
             label: 'Pending Bookings',
@@ -149,6 +234,7 @@ export default function DashboardPage() {
             color: 'hsl(38 92% 50%)',
             bg: 'rgba(245,158,11,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(245,158,11,0.12)] border-amber-500/10',
+            sparklinePoints: [2, 5, 8, 4, 3, 6, 5],
         },
         {
             label: 'Cancellations',
@@ -159,6 +245,7 @@ export default function DashboardPage() {
             color: 'hsl(0 84% 60%)',
             bg: 'rgba(239,68,68,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(239,68,68,0.12)] border-rose-500/10',
+            sparklinePoints: [0, 1, 3, 2, 1, 2, 2],
         },
         {
             label: 'Active Stays',
@@ -169,6 +256,7 @@ export default function DashboardPage() {
             color: 'hsl(262 83% 58%)',
             bg: 'rgba(139,92,246,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(139,92,246,0.12)] border-violet-500/10',
+            sparklinePoints: [20, 25, 28, 30, 32, 35, 38],
         },
         {
             label: 'Check-outs Today',
@@ -179,6 +267,7 @@ export default function DashboardPage() {
             color: 'hsl(200 15% 45%)',
             bg: 'rgba(100,116,139,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(100,116,139,0.12)] border-slate-500/10',
+            sparklinePoints: [4, 6, 5, 8, 10, 7, 8],
         },
         {
             label: 'ADR',
@@ -189,6 +278,7 @@ export default function DashboardPage() {
             color: 'hsl(292 84% 60%)',
             bg: 'rgba(168,85,247,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(168,85,247,0.12)] border-purple-500/10',
+            sparklinePoints: [6000, 6200, 6100, 6400, 6600, 6700, 6850],
         },
         {
             label: 'RevPAR',
@@ -199,6 +289,7 @@ export default function DashboardPage() {
             color: 'hsl(326 86% 55%)',
             bg: 'rgba(236,72,153,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(236,72,153,0.12)] border-pink-500/10',
+            sparklinePoints: [4200, 4350, 4100, 4500, 4600, 4700, 4795],
         },
     ];
 
@@ -230,27 +321,37 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Stats Grid - iOS Widgets Style */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 md:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
                     {stats.map((stat) => (
-                        <div key={stat.label} className={`ios-platter p-5 rounded-[24px] flex flex-col justify-between hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.01)] border ${stat.glow}`}>
+                        <div 
+                            key={stat.label} 
+                            className={`ios-platter p-5 rounded-[24px] flex flex-col justify-between hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.01)] border ${stat.glow}`}
+                            style={{
+                                background: 'linear-gradient(135deg, var(--card-bg-start, rgba(255,255,255,0.05)), var(--card-bg-end, rgba(255,255,255,0.02)))',
+                                backdropFilter: 'blur(20px)',
+                            }}
+                        >
                             <div className="flex items-start justify-between mb-4">
-                                <div className="p-2.5 rounded-full flex items-center justify-center shadow-inner" style={{ background: stat.bg }}>
-                                    <stat.icon size={15} style={{ color: stat.color }} />
+                                <div className="p-2.5 rounded-2xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)]" style={{ background: stat.bg }}>
+                                    <stat.icon size={16} style={{ color: stat.color }} />
                                 </div>
-                                {stat.up !== null && (
-                                    <div className={`flex items-center text-[10px] font-bold ${stat.up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {stat.up
-                                            ? <ArrowUpRight size={12} className="stroke-[3]" />
-                                            : <ArrowDownRight size={12} className="stroke-[3]" />
-                                        }
-                                    </div>
-                                )}
+                                <Sparkline points={stat.sparklinePoints} color={stat.color} />
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest leading-none mb-1.5">{stat.label}</div>
-                                <div className="text-xl md:text-2xl font-black tracking-tight text-foreground leading-none">{stat.value}</div>
-                                <div className="text-[10px] font-bold mt-2" style={{ color: stat.up ? 'hsl(142 71% 45%)' : stat.up === null ? 'hsl(var(--muted-foreground))' : 'hsl(0 84% 60%)' }}>
-                                    {stat.change}
+                                <div className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-1.5">{stat.label}</div>
+                                <div className="text-xl md:text-2xl font-black tracking-tight text-foreground leading-none">
+                                    <AnimatedNumber value={stat.value} />
+                                </div>
+                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-black/5 dark:border-white/5">
+                                    <div className="text-[10px] font-bold" style={{ color: stat.up ? 'hsl(142 71% 45%)' : stat.up === null ? 'hsl(var(--muted-foreground))' : 'hsl(0 84% 60%)' }}>
+                                        {stat.change}
+                                    </div>
+                                    {stat.up !== null && (
+                                        <div className={`flex items-center gap-0.5 text-[10px] font-extrabold ${stat.up ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {stat.up ? '+' : '-'}
+                                            {stat.up ? <ArrowUpRight size={10} className="stroke-[3.5]" /> : <ArrowDownRight size={10} className="stroke-[3.5]" />}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
