@@ -107,6 +107,8 @@ export default function EditRoomPage() {
               "Coffee machine", "Safe", "Ensuite bathroom", "Balcony", "Sea view"
        ];
 
+       const [customAmenity, setCustomAmenity] = useState('');
+
        const toggleAmenity = (amenity: string) => {
               setFormData(prev => ({
                      ...prev,
@@ -114,6 +116,79 @@ export default function EditRoomPage() {
                             ? prev.amenities.filter(a => a !== amenity)
                             : [...prev.amenities, amenity]
               }));
+       };
+
+       const handleAddCustomAmenity = () => {
+              const val = customAmenity.trim();
+              if (val && !formData.amenities.includes(val)) {
+                     setFormData(prev => ({
+                            ...prev,
+                            amenities: [...prev.amenities, val]
+                     }));
+              }
+              setCustomAmenity('');
+       };
+
+       // Rate Plans Logic
+       const { data: ratePlans = [], refetch: refetchRatePlans } = useQuery({
+              queryKey: ['rate-plans', id],
+              queryFn: async () => {
+                     const res = await api.get(`/hotel/rooms/${id}/rate-plans`);
+                     return res.data;
+              },
+       });
+
+       const [isAddingRatePlan, setIsAddingRatePlan] = useState(false);
+       const [newRatePlan, setNewRatePlan] = useState({
+              name: '',
+              mealPlan: 'EP',
+              markupAmount: '',
+              isRefundable: true,
+              cancellationPolicy: '',
+              inclusions: ''
+       });
+
+       const handleAddRatePlan = async () => {
+              if (!newRatePlan.name.trim()) {
+                     alert("Please enter a Package Name.");
+                     return;
+              }
+              setIsAddingRatePlan(true);
+              try {
+                     await api.post('/hotel/rate-plans', {
+                            roomTypeId: id,
+                            name: newRatePlan.name,
+                            mealPlan: newRatePlan.mealPlan,
+                            markupAmount: parseFloat(newRatePlan.markupAmount) || 0,
+                            isRefundable: newRatePlan.isRefundable,
+                            cancellationPolicy: newRatePlan.cancellationPolicy,
+                            inclusions: newRatePlan.inclusions.split(',').map(s => s.trim()).filter(Boolean)
+                     });
+                     setNewRatePlan({
+                            name: '',
+                            mealPlan: 'EP',
+                            markupAmount: '',
+                            isRefundable: true,
+                            cancellationPolicy: '',
+                            inclusions: ''
+                     });
+                     refetchRatePlans();
+              } catch (err) {
+                     alert('Failed to add rate plan');
+              } finally {
+                     setIsAddingRatePlan(false);
+              }
+       };
+
+       const handleDeleteRatePlan = async (ratePlanId: string) => {
+              if (confirm('Delete this rate plan?')) {
+                     try {
+                            await api.delete(`/hotel/rate-plans/${ratePlanId}`);
+                            refetchRatePlans();
+                     } catch(err) {
+                            alert('Failed to delete');
+                     }
+              }
        };
 
        // Linked Rooms Logic
@@ -323,7 +398,7 @@ export default function EditRoomPage() {
                                                  <div className="space-y-4 md:col-span-2">
                                                         <label className="text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>Amenities</label>
                                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                                               {availableAmenities.map((amenity) => (
+                                                               {Array.from(new Set([...availableAmenities, ...formData.amenities])).map((amenity) => (
                                                                       <button
                                                                              key={amenity}
                                                                              type="button"
@@ -341,10 +416,165 @@ export default function EditRoomPage() {
                                                                                            <div className="w-2 h-2 bg-white rounded-full" />
                                                                                     )}
                                                                              </div>
-                                                                             {amenity}
+                                                                             <span className="truncate">{amenity}</span>
                                                                       </button>
                                                                ))}
                                                         </div>
+                                                        <div className="flex gap-3 pt-2">
+                                                               <input 
+                                                                      type="text" 
+                                                                      placeholder="Add custom amenity (e.g., Private Pool, Butler)"
+                                                                      className="form-input flex-1 md:max-w-xs"
+                                                                      value={customAmenity}
+                                                                      onChange={e => setCustomAmenity(e.target.value)}
+                                                                      onKeyDown={e => {
+                                                                             if (e.key === 'Enter') {
+                                                                                    e.preventDefault();
+                                                                                    handleAddCustomAmenity();
+                                                                             }
+                                                                      }}
+                                                               />
+                                                               <button 
+                                                                      type="button" 
+                                                                      onClick={handleAddCustomAmenity}
+                                                                      className="px-5 py-2.5 bg-[var(--table-header)] border border-[var(--glass-border)] text-[hsl(var(--foreground))] rounded-xl text-sm font-bold shadow-sm hover:border-[hsl(var(--accent))] transition-all whitespace-nowrap"
+                                                               >
+                                                                      Add Custom
+                                                               </button>
+                                                        </div>
+                                                 </div>
+
+                                                 {/* Rate Plans / Packages */}
+                                                 <div className="space-y-4 md:col-span-2 pt-2">
+                                                        <label className="text-sm font-medium block" style={{ color: 'hsl(var(--foreground))' }}>Rate Plans / Packages</label>
+                                                        <p className="text-xs mb-3 -mt-2" style={{ color: 'hsl(var(--muted-foreground))' }}>Create advanced packages for this room (e.g., Free Cancellation, Breakfast Included) matching your pricing tiers.</p>
+                                                        
+                                                        {/* Add new rate plan form */}
+                                                        <div className="flex flex-col gap-4 bg-[var(--table-header)] p-5 rounded-xl border border-[var(--glass-border)]">
+                                                            {/* Row 1: Package Name and Meal Plan */}
+                                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                               <input 
+                                                                      type="text" 
+                                                                      placeholder="Package Name (e.g. Room With Free Cancellation)"
+                                                                      className="form-input w-full text-sm md:col-span-3"
+                                                                      value={newRatePlan.name}
+                                                                      onChange={e => setNewRatePlan({...newRatePlan, name: e.target.value})}
+                                                                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddRatePlan())}
+                                                               />
+                                                               <select 
+                                                                    className="form-input w-full text-sm bg-transparent md:col-span-1"
+                                                                    value={newRatePlan.mealPlan}
+                                                                    onChange={e => setNewRatePlan({...newRatePlan, mealPlan: e.target.value})}
+                                                               >
+                                                                    <option value="EP" className="bg-[#0f172a]">Room Only (EP)</option>
+                                                                    <option value="CP" className="bg-[#0f172a]">Breakfast Included (CP)</option>
+                                                                    <option value="MAP" className="bg-[#0f172a]">Breakfast + Lunch/Dinner (MAP)</option>
+                                                                    <option value="AP" className="bg-[#0f172a]">All Meals Included (AP)</option>
+                                                               </select>
+                                                            </div>
+
+                                                            {/* Row 2: Inclusions and Markup */}
+                                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                                <input 
+                                                                    type="text"
+                                                                    placeholder="Inclusions (comma separated: Free Wifi, Happy Hour)"
+                                                                    className="form-input w-full text-sm md:col-span-3"
+                                                                    value={newRatePlan.inclusions}
+                                                                    onChange={e => setNewRatePlan({...newRatePlan, inclusions: e.target.value})}
+                                                                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddRatePlan())}
+                                                                />
+                                                                <input 
+                                                                       type="number" 
+                                                                       placeholder="Markup (₹)"
+                                                                       className="form-input w-full text-sm md:col-span-1"
+                                                                       value={newRatePlan.markupAmount}
+                                                                       onChange={e => setNewRatePlan({...newRatePlan, markupAmount: e.target.value})}
+                                                                       onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddRatePlan())}
+                                                                />
+                                                            </div>
+
+                                                            {/* Row 3: Refundable Policy */}
+                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+                                                                <label className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap text-[hsl(var(--foreground))]">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        className="rounded bg-black/20 border-white/10 w-4 h-4 accent-emerald-500"
+                                                                        checked={newRatePlan.isRefundable}
+                                                                        onChange={e => setNewRatePlan({...newRatePlan, isRefundable: e.target.checked})}
+                                                                    />
+                                                                    Refundable
+                                                                </label>
+                                                                {newRatePlan.isRefundable && (
+                                                                    <input 
+                                                                        type="text"
+                                                                        placeholder="Policy (e.g. till 24 hrs before)"
+                                                                        className="form-input w-full sm:flex-1 text-sm sm:max-w-md"
+                                                                        value={newRatePlan.cancellationPolicy}
+                                                                        onChange={e => setNewRatePlan({...newRatePlan, cancellationPolicy: e.target.value})}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex justify-end border-t border-[var(--glass-border)] pt-4 mt-1">
+                                                               <button 
+                                                                      type="button" 
+                                                                      onClick={handleAddRatePlan}
+                                                                      disabled={isAddingRatePlan}
+                                                                      className="px-6 py-2.5 bg-[hsl(var(--accent))] text-white rounded-xl text-sm font-bold shadow-md hover:opacity-90 disabled:opacity-50 transition-all"
+                                                               >
+                                                                      {isAddingRatePlan ? 'Adding Package...' : 'Add Package'}
+                                                               </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* List of added rate plans */}
+                                                        {ratePlans.length > 0 && (
+                                                               <div className="grid grid-cols-1 gap-4 mt-6">
+                                                                      {ratePlans.map((plan: any) => (
+                                                                             <div key={plan.id} className="relative flex flex-col sm:flex-row p-5 rounded-2xl border border-[var(--glass-border)] bg-white/5 shadow-sm transition-all hover:bg-white/10">
+                                                                                    <div className="absolute top-4 right-4 sm:top-5 sm:right-5">
+                                                                                           <button 
+                                                                                                  type="button" 
+                                                                                                  onClick={() => handleDeleteRatePlan(plan.id)}
+                                                                                                  className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                                                                                           >
+                                                                                                  <Trash2 size={16} />
+                                                                                           </button>
+                                                                                    </div>
+                                                                                    <div className="flex-1 pr-12">
+                                                                                        {plan.name.toLowerCase().includes('super package') && (
+                                                                                            <span className="inline-block px-2 py-0.5 border border-[#cba052] text-[#cba052] text-[10px] font-bold uppercase rounded mb-2 bg-[#cba052]/10">Super Package</span>
+                                                                                        )}
+                                                                                        <h4 className="text-base font-bold text-[hsl(var(--foreground))] mb-3">{plan.name}</h4>
+                                                                                        
+                                                                                        <div className="text-[13px] space-y-2 text-[hsl(var(--muted-foreground))]">
+                                                                                            {plan.mealPlan !== 'EP' && (
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--foreground))]"></span>
+                                                                                                    {plan.mealPlan === 'CP' ? 'Breakfast included' : plan.mealPlan === 'MAP' ? 'Breakfast + Lunch/Dinner included' : 'All Meals Included'}
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {plan.inclusions?.map((inc: string, i: number) => (
+                                                                                                <div key={i} className="flex items-center gap-2">
+                                                                                                    <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--foreground))]"></span>
+                                                                                                    {inc}
+                                                                                                </div>
+                                                                                            ))}
+                                                                                            <div className={`flex items-center gap-2 ${plan.isRefundable ? 'text-emerald-500 font-medium' : 'text-red-500 font-medium'}`}>
+                                                                                                <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                                                                                {plan.isRefundable ? `Free Cancellation ${plan.cancellationPolicy}` : 'Non-Refundable'}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="mt-4 sm:mt-0 sm:ml-6 sm:pl-6 sm:border-l border-[var(--glass-border)] flex flex-col justify-center sm:text-right pr-12 sm:pr-0">
+                                                                                        <div className="text-2xl font-black text-[hsl(var(--foreground))] tracking-tight">
+                                                                                            + ₹{plan.markupAmount}
+                                                                                        </div>
+                                                                                        <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--muted-foreground))] mt-1">Extra / Night</div>
+                                                                                    </div>
+                                                                             </div>
+                                                                      ))}
+                                                               </div>
+                                                        )}
                                                  </div>
 
                                                  {/* Photos */}

@@ -67,7 +67,14 @@ export default function RoomsPage() {
                                             <BedDouble size={20} style={{ color: 'hsl(225 70% 65%)' }} />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-[hsl(var(--foreground))] text-sm">{room.name}</h3>
+                                            <h3 className="font-semibold text-[hsl(var(--foreground))] text-sm flex items-center gap-2">
+                                                {room.name}
+                                                {room.ratePlans && room.ratePlans.length > 0 && (
+                                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[hsl(var(--accent))/10] text-[hsl(var(--accent))] border border-[hsl(var(--accent))/20]">
+                                                        {room.ratePlans.length} {room.ratePlans.length === 1 ? 'Package' : 'Packages'}
+                                                    </span>
+                                                )}
+                                            </h3>
                                             <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>Room Category</p>
                                         </div>
                                     </div>
@@ -118,9 +125,16 @@ export default function RoomsPage() {
 
                                 {/* Amenity tags */}
                                 <div className="flex flex-wrap gap-1.5 mt-4">
-                                    {['AC', 'WiFi', 'TV'].map((a) => (
-                                        <span key={a} className="badge badge-muted text-xs">{a}</span>
-                                    ))}
+                                    {room.amenities && room.amenities.length > 0 ? (
+                                        room.amenities.slice(0, 4).map((a: string, i: number) => (
+                                            <span key={i} className="badge badge-muted text-xs">{a}</span>
+                                        ))
+                                    ) : (
+                                        <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>No amenities listed</span>
+                                    )}
+                                    {room.amenities && room.amenities.length > 4 && (
+                                        <span className="badge badge-muted text-xs">+{room.amenities.length - 4}</span>
+                                    )}
                                 </div>
 
                                 {/* Actions */}
