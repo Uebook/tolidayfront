@@ -178,7 +178,7 @@ export default function StandaloneInvoicePage({ params }: { params: Promise<{ id
                                 <td className="p-3 text-right">10%</td>
                                 <td className="p-3 text-right">₹{Number(invoice.commissionAmount).toLocaleString()}</td>
                                 <td className="p-3 text-right">₹{Number(invoice.gstAmount).toLocaleString()}</td>
-                                <td className="p-3 text-right font-bold text-indigo-900">₹{(Number(invoice.commissionAmount) + Number(invoice.gstAmount)).toLocaleString()}</td>
+                                <td className="p-3 text-right font-bold text-indigo-900">₹{(Number(invoice.commissionAmount) + Number(invoice.gstAmount) - Number(invoice.tdsAmount || 0)).toLocaleString()}</td>
                             </tr>
                         </tbody>
                     </table>
