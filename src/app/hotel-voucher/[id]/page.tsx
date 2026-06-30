@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import { Printer, Download, ArrowLeft, Mail, Phone, Calendar, MapPin, ShieldCheck, Info } from 'lucide-react';
 import Link from 'next/link';
 
-export default function HotelVoucherPage({ params }: { params: Promise<{ id: string }> }) {
+export default function StandaloneHotelVoucherPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
 
     const { data: booking, isLoading, error } = useQuery({

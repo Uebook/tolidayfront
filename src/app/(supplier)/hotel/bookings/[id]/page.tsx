@@ -156,7 +156,7 @@ export default function BookingDetailsPage({ params }: { params: Promise<{ id: s
                         <button onClick={() => openModifyModal(booking)} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/15 transition-colors">
                             <Edit size={16} /> Modify Booking
                         </button>
-                        <Link href={`/hotel/bookings/${id}/voucher`} target="_blank">
+                        <Link href={`/hotel-voucher/${id}`} target="_blank">
                             <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-[var(--glass-border-light)] hover:bg-[var(--table-header)] transition-colors">
                                 <Printer size={16} /> Print Voucher
                             </button>
