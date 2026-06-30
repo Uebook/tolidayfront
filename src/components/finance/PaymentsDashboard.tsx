@@ -129,8 +129,8 @@ export default function PaymentsDashboard() {
         return { refNumber, line1, line2, line3 };
     };
 
-    // Apply Filters (Search and Dates)
-    const filteredEntries = entriesWithBalanceAsc.filter((entry: any) => {
+    // Apply Filters (Search and Dates) using computedDesc (newest first)
+    const filteredEntries = computedDesc.filter((entry: any) => {
         const { refNumber, line1 } = parseLedgerEntry(entry);
         
         // Search Term Match
@@ -318,18 +318,6 @@ export default function PaymentsDashboard() {
                                                 <tr><td colSpan={6} className="text-center py-10 text-[hsl(var(--muted-foreground))]">No transactions found matching your filters.</td></tr>
                                             ) : (
                                                 <>
-                                                    {/* Opening Balance Row (only shown on page 1) */}
-                                                    {currentPage === 1 && !searchTerm && !startDate && !endDate && (
-                                                        <tr className="border-b border-[var(--glass-border)] bg-[hsl(var(--accent)/0.02)] font-semibold">
-                                                            <td className="px-6 py-4 text-[hsl(var(--muted-foreground))] text-xs font-bold">-</td>
-                                                            <td className="px-6 py-4 text-[hsl(var(--muted-foreground))] text-xs font-bold">-</td>
-                                                            <td className="px-6 py-4 font-black text-slate-800 dark:text-slate-200">Opening Balance</td>
-                                                            <td className="px-6 py-4 text-right text-[hsl(var(--muted-foreground))]">-</td>
-                                                            <td className="px-6 py-4 text-right text-green-500 font-bold">₹{openingBalance.toLocaleString()}</td>
-                                                            <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-slate-100">₹{openingBalance.toLocaleString()}</td>
-                                                        </tr>
-                                                    )}
-
                                                     {/* Transaction Rows */}
                                                     {currentItems.map((entry: any) => {
                                                         const { refNumber, line1, line2, line3 } = parseLedgerEntry(entry);
@@ -358,6 +346,18 @@ export default function PaymentsDashboard() {
                                                             </tr>
                                                         );
                                                     })}
+
+                                                    {/* Opening Balance Row (only shown at the bottom of the last page) */}
+                                                    {currentPage === totalPages && !searchTerm && !startDate && !endDate && (
+                                                        <tr className="border-b border-[var(--glass-border)] bg-[hsl(var(--accent)/0.02)] font-semibold">
+                                                            <td className="px-6 py-4 text-[hsl(var(--muted-foreground))] text-xs font-bold">-</td>
+                                                            <td className="px-6 py-4 text-[hsl(var(--muted-foreground))] text-xs font-bold">-</td>
+                                                            <td className="px-6 py-4 font-black text-slate-800 dark:text-slate-200">Opening Balance</td>
+                                                            <td className="px-6 py-4 text-right text-[hsl(var(--muted-foreground))]">-</td>
+                                                            <td className="px-6 py-4 text-right text-green-500 font-bold">₹{openingBalance.toLocaleString()}</td>
+                                                            <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-slate-100">₹{openingBalance.toLocaleString()}</td>
+                                                        </tr>
+                                                    )}
                                                 </>
                                             )}
                                         </tbody>
