@@ -96,6 +96,13 @@ export default function PaymentsDashboard() {
     const openingBalance = tempBal;
     const entriesWithBalanceAsc = [...computedDesc].reverse();
 
+    // Filter and Pagination States
+    const [searchTerm, setSearchTerm] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     const parseLedgerEntry = (entry: any) => {
         let refNumber = entry.referenceId ? entry.referenceId.substring(0, 10).toUpperCase() : '-';
         let line1 = entry.description;
@@ -120,6 +127,46 @@ export default function PaymentsDashboard() {
             }
         }
         return { refNumber, line1, line2, line3 };
+    };
+
+    // Apply Filters (Search and Dates)
+    const filteredEntries = entriesWithBalanceAsc.filter((entry: any) => {
+        const { refNumber, line1 } = parseLedgerEntry(entry);
+        
+        // Search Term Match
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const matchesSearch = 
+                refNumber.toLowerCase().includes(term) || 
+                line1.toLowerCase().includes(term) || 
+                entry.description.toLowerCase().includes(term);
+            if (!matchesSearch) return false;
+        }
+
+        // Date Range Match
+        const entryDate = new Date(entry.createdAt);
+        if (startDate) {
+            const start = new Date(startDate);
+            start.setHours(0,0,0,0);
+            if (entryDate < start) return false;
+        }
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23,59,59,999);
+            if (entryDate > end) return false;
+        }
+
+        return true;
+    });
+
+    // Pagination calculations
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredEntries.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredEntries.length / itemsPerPage) || 1;
+
+    const handlePageChange = (pageNumber: number) => {
+        setCurrentPage(pageNumber);
     };
 
     return (
@@ -220,6 +267,38 @@ export default function PaymentsDashboard() {
                                     </div>
                                 </div>
 
+                                {/* Filters Panel */}
+                                <div className="px-6 py-4 grid grid-cols-1 sm:grid-cols-4 gap-4 bg-black/5 border-b border-[var(--glass-border)]">
+                                    <div className="sm:col-span-2">
+                                        <label className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase block mb-1.5">Search Statement</label>
+                                        <input 
+                                            type="text" 
+                                            value={searchTerm}
+                                            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                            placeholder="Search description, reference no..."
+                                            className="w-full text-xs px-4 py-2.5 bg-black/10 border border-[var(--glass-border)] rounded-xl outline-none focus:border-[hsl(var(--accent))] text-[hsl(var(--foreground))]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase block mb-1.5">Start Date</label>
+                                        <input 
+                                            type="date" 
+                                            value={startDate}
+                                            onChange={e => { setStartDate(e.target.value); setCurrentPage(1); }}
+                                            className="w-full text-xs px-4 py-2.5 bg-black/10 border border-[var(--glass-border)] rounded-xl outline-none focus:border-[hsl(var(--accent))] text-[hsl(var(--foreground))] cursor-pointer"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase block mb-1.5">End Date</label>
+                                        <input 
+                                            type="date" 
+                                            value={endDate}
+                                            onChange={e => { setEndDate(e.target.value); setCurrentPage(1); }}
+                                            className="w-full text-xs px-4 py-2.5 bg-black/10 border border-[var(--glass-border)] rounded-xl outline-none focus:border-[hsl(var(--accent))] text-[hsl(var(--foreground))] cursor-pointer"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-sm">
                                         <thead className="bg-[var(--table-header)] border-b border-[var(--glass-border)] text-[hsl(var(--muted-foreground))] text-xs uppercase">
@@ -235,22 +314,24 @@ export default function PaymentsDashboard() {
                                         <tbody>
                                             {ledgerLoading ? (
                                                 <tr><td colSpan={6} className="text-center py-10">Loading ledger...</td></tr>
-                                            ) : ledger.length === 0 ? (
-                                                <tr><td colSpan={6} className="text-center py-10 text-[hsl(var(--muted-foreground))]">No transactions found.</td></tr>
+                                            ) : filteredEntries.length === 0 ? (
+                                                <tr><td colSpan={6} className="text-center py-10 text-[hsl(var(--muted-foreground))]">No transactions found matching your filters.</td></tr>
                                             ) : (
                                                 <>
-                                                    {/* Opening Balance Row */}
-                                                    <tr className="border-b border-[var(--glass-border)] bg-[hsl(var(--accent)/0.02)] font-semibold">
-                                                        <td className="px-6 py-4 text-[hsl(var(--muted-foreground))] text-xs font-bold">-</td>
-                                                        <td className="px-6 py-4 text-[hsl(var(--muted-foreground))] text-xs font-bold">-</td>
-                                                        <td className="px-6 py-4 font-black text-slate-800 dark:text-slate-200">Opening Balance</td>
-                                                        <td className="px-6 py-4 text-right text-[hsl(var(--muted-foreground))]">-</td>
-                                                        <td className="px-6 py-4 text-right text-green-500 font-bold">₹{openingBalance.toLocaleString()}</td>
-                                                        <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-slate-100">₹{openingBalance.toLocaleString()}</td>
-                                                    </tr>
+                                                    {/* Opening Balance Row (only shown on page 1) */}
+                                                    {currentPage === 1 && !searchTerm && !startDate && !endDate && (
+                                                        <tr className="border-b border-[var(--glass-border)] bg-[hsl(var(--accent)/0.02)] font-semibold">
+                                                            <td className="px-6 py-4 text-[hsl(var(--muted-foreground))] text-xs font-bold">-</td>
+                                                            <td className="px-6 py-4 text-[hsl(var(--muted-foreground))] text-xs font-bold">-</td>
+                                                            <td className="px-6 py-4 font-black text-slate-800 dark:text-slate-200">Opening Balance</td>
+                                                            <td className="px-6 py-4 text-right text-[hsl(var(--muted-foreground))]">-</td>
+                                                            <td className="px-6 py-4 text-right text-green-500 font-bold">₹{openingBalance.toLocaleString()}</td>
+                                                            <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-slate-100">₹{openingBalance.toLocaleString()}</td>
+                                                        </tr>
+                                                    )}
 
                                                     {/* Transaction Rows */}
-                                                    {entriesWithBalanceAsc.map((entry: any) => {
+                                                    {currentItems.map((entry: any) => {
                                                         const { refNumber, line1, line2, line3 } = parseLedgerEntry(entry);
                                                         return (
                                                             <tr key={entry.id} className="border-b border-[var(--glass-border)] hover:bg-white/5 transition-colors">
@@ -282,8 +363,43 @@ export default function PaymentsDashboard() {
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {/* Pagination Controls */}
+                                {filteredEntries.length > itemsPerPage && (
+                                    <div className="px-6 py-4 flex items-center justify-between border-t border-[var(--glass-border)] bg-black/5">
+                                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                            Showing <strong className="text-[hsl(var(--foreground))]">{indexOfFirstItem + 1}</strong> to <strong className="text-[hsl(var(--foreground))]">{Math.min(indexOfLastItem, filteredEntries.length)}</strong> of <strong className="text-[hsl(var(--foreground))]">{filteredEntries.length}</strong> transactions
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => handlePageChange(currentPage - 1)}
+                                                disabled={currentPage === 1}
+                                                className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition-colors"
+                                            >
+                                                Previous
+                                            </button>
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => handlePageChange(page)}
+                                                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === page ? 'btn-primary' : 'border border-[var(--glass-border)] hover:bg-white/5'}`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            ))}
+                                            <button 
+                                                onClick={() => handlePageChange(currentPage + 1)}
+                                                disabled={currentPage === totalPages}
+                                                className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition-colors"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
+
 
                         {/* PAYOUTS TAB */}
                         {activeTab === 'PAYOUTS' && (
