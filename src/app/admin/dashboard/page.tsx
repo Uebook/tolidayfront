@@ -4,9 +4,12 @@ import React from 'react';
 import { 
        Activity, TrendingUp, Users, IndianRupee, 
        Building2, Map, Bus, CarFront, Download, ArrowUpRight,
-       DollarSign, Clock, CalendarDays, ArrowDownRight, CheckCircle2, AlertCircle
+       DollarSign, Clock, CalendarDays, ArrowDownRight, CheckCircle2, AlertCircle, Loader2
 } from 'lucide-react';
 import Topbar from '@/components/layout/Topbar';
+import { useAdminFilter } from '@/context/AdminFilterContext';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 function AnimatedNumber({ value }: { value: number | string }) {
     return <span>{value}</span>;
@@ -56,81 +59,176 @@ function Sparkline({ points, color }: { points: number[]; color: string }) {
 }
 
 export default function SuperDashboardPage() {
+    const { serviceFilter } = useAdminFilter();
+
+    const { data: dbStats, isLoading } = useQuery({
+        queryKey: ['admin-dashboard-stats'],
+        queryFn: async () => {
+            const res = await api.get('/admin/stats');
+            return res.data;
+        }
+    });
+
+    const formatCurrency = (val: number) => {
+        if (!val) return '₹0';
+        if (val >= 1000000) return `₹${(val / 1000000).toFixed(1)}M`;
+        if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
+        return `₹${val.toLocaleString()}`;
+    };
+
+    const formatNumber = (val: number) => {
+        if (!val) return '0';
+        return val.toLocaleString();
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[80vh] items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="animate-spin text-primary" size={40} />
+                    <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Loading Analytics...</span>
+                </div>
+            </div>
+        );
+    }
+
+    const rev = dbStats?.revenue || {};
+    const bookings = dbStats?.bookingsCount || {};
+    const consumers = dbStats?.consumersCount || {};
+
+    const getFilterData = () => {
+        if (serviceFilter === 'Hotel') {
+            return {
+                tgv: formatCurrency(rev.hotels),
+                bookings: formatNumber(bookings.hotels),
+                consumers: formatNumber(consumers.hotels),
+                revenue: formatCurrency(rev.hotels * 0.15),
+                sparklines: [
+                    [15, 20, 18, 30, 25, 38, 45],
+                    [20, 35, 50, 25, 40, 60, 50],
+                    [100, 120, 135, 115, 110, 125, 120],
+                    [10, 12, 14, 15, 16, 17, 19]
+                ]
+            };
+        }
+        if (serviceFilter === 'Packages') {
+            return {
+                tgv: formatCurrency(rev.packages),
+                bookings: formatNumber(bookings.packages),
+                consumers: formatNumber(consumers.packages),
+                revenue: formatCurrency(rev.packages * 0.15),
+                sparklines: [
+                    [10, 15, 12, 20, 18, 25, 30],
+                    [15, 25, 35, 20, 30, 45, 40],
+                    [60, 75, 85, 70, 65, 80, 75],
+                    [6, 8, 9, 10, 11, 12, 13]
+                ]
+            };
+        }
+        if (serviceFilter === 'Buses') {
+            return {
+                tgv: formatCurrency(rev.buses),
+                bookings: formatNumber(bookings.buses),
+                consumers: formatNumber(consumers.buses),
+                revenue: formatCurrency(rev.buses * 0.15),
+                sparklines: [
+                    [5, 8, 6, 10, 8, 12, 15],
+                    [10, 18, 25, 15, 20, 30, 28],
+                    [30, 40, 45, 35, 30, 42, 38],
+                    [2, 3, 4, 4, 5, 5, 6]
+                ]
+            };
+        }
+        if (serviceFilter === 'Cabs') {
+            return {
+                tgv: formatCurrency(rev.cabs),
+                bookings: formatNumber(bookings.cabs),
+                consumers: formatNumber(consumers.cabs),
+                revenue: formatCurrency(rev.cabs * 0.15),
+                sparklines: [
+                    [3, 5, 4, 6, 5, 8, 10],
+                    [5, 10, 15, 10, 12, 18, 16],
+                    [15, 20, 22, 18, 16, 22, 20],
+                    [1, 1, 2, 2, 2, 3, 3]
+                ]
+            };
+        }
+
+        // All
+        return {
+            tgv: formatCurrency(rev.total),
+            bookings: formatNumber(bookings.total),
+            consumers: formatNumber(consumers.total),
+            revenue: formatCurrency(rev.total * 0.15),
+            sparklines: [
+                [30, 45, 35, 60, 50, 75, 90],
+                [50, 80, 120, 60, 100, 150, 120],
+                [200, 250, 280, 240, 230, 260, 250],
+                [20, 25, 28, 30, 32, 35, 38]
+            ]
+        };
+    };
+
+    const currentData = getFilterData();
+
     const stats = [
         {
             label: "Total Gross Volume (TGV)",
-            value: "₹2.4M",
+            value: currentData.tgv,
             change: 'All time',
             up: true,
             icon: DollarSign,
             color: 'hsl(219 90% 50%)',
             bg: 'rgba(59,130,246,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)] border-blue-500/10',
-            sparklinePoints: [30, 45, 35, 60, 50, 75, 90],
+            sparklinePoints: currentData.sparklines[0],
         },
         {
             label: 'Total Bookings',
-            value: "12,492",
+            value: currentData.bookings,
             change: 'Network wide',
             up: true,
             icon: CheckCircle2,
             color: 'hsl(142 71% 45%)',
             bg: 'rgba(16,185,129,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(16,185,129,0.12)] border-emerald-500/10',
-            sparklinePoints: [50, 80, 120, 60, 100, 150, 120],
+            sparklinePoints: currentData.sparklines[1],
         },
         {
             label: 'Active Consumers',
-            value: "24,591",
+            value: currentData.consumers,
             change: 'Growing',
             up: true,
             icon: Users,
             color: 'hsl(38 92% 50%)',
             bg: 'rgba(245,158,11,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(245,158,11,0.12)] border-amber-500/10',
-            sparklinePoints: [200, 250, 280, 240, 230, 260, 250],
+            sparklinePoints: currentData.sparklines[2],
         },
         {
             label: 'Net Platform Revenue',
-            value: "₹360K",
+            value: currentData.revenue,
             change: 'Calculated from 15% flat commission',
             up: true,
             icon: Activity,
             color: 'hsl(262 83% 58%)',
             bg: 'rgba(139,92,246,0.08)',
             glow: 'hover:shadow-[0_12px_30px_rgba(139,92,246,0.12)] border-violet-500/10',
-            sparklinePoints: [20, 25, 28, 30, 32, 35, 38],
+            sparklinePoints: currentData.sparklines[3],
         }
     ];
 
-    const [serviceFilter, setServiceFilter] = React.useState('Hotel');
+    const verticalData = [
+        { name: 'Hotel Operations', filterKey: 'Hotel', icon: Building2, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-500/10', rev: formatCurrency(rev.hotels), bookings: formatNumber(bookings.hotels) },
+        { name: 'Tour Operations', filterKey: 'Packages', icon: Map, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', rev: formatCurrency(rev.packages), bookings: formatNumber(bookings.packages) },
+        { name: 'Bus Operations', filterKey: 'Buses', icon: Bus, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10', rev: formatCurrency(rev.buses), bookings: formatNumber(bookings.buses) },
+        { name: 'Cab Operations', filterKey: 'Cabs', icon: CarFront, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10', rev: formatCurrency(rev.cabs), bookings: formatNumber(bookings.cabs) },
+    ];
     
     return (
         <div className="min-h-full">
             <Topbar title="Super Dashboard" subtitle="Global Intelligence and Platform-wide overview" />
             <div className="p-6 md:p-8 space-y-6 md:space-y-8 animate-fadeIn max-w-[1600px] mx-auto">
-                
-                {/* Global Filters */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <select 
-                                value={serviceFilter}
-                                onChange={(e) => setServiceFilter(e.target.value)}
-                                className="appearance-none bg-white dark:bg-slate-900 border border-border/10 rounded-2xl px-5 py-2.5 pr-10 text-sm font-bold text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                            >
-                                <option value="All">All Services</option>
-                                <option value="Hotel">Hotel Operations</option>
-                                <option value="Packages">Tour & Packages</option>
-                                <option value="Buses">Bus Operations</option>
-                                <option value="Cabs">Cab Operations</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Stats Grid - iOS Widgets Style */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
@@ -178,12 +276,7 @@ export default function SuperDashboardPage() {
                             <h3 className="font-extrabold text-sm uppercase tracking-wider text-muted-foreground/60">Vertical Performance</h3>
                         </div>
                         <div className="divide-y divide-border/5">
-                            {[
-                                { name: 'Hotel Operations', filterKey: 'Hotel', icon: Building2, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-500/10', rev: '₹1.2M', bookings: '5,230' },
-                                { name: 'Tour Operations', filterKey: 'Packages', icon: Map, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', rev: '₹800K', bookings: '3,100' },
-                                { name: 'Bus Operations', filterKey: 'Buses', icon: Bus, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10', rev: '₹250K', bookings: '2,800' },
-                                { name: 'Cab Operations', filterKey: 'Cabs', icon: CarFront, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10', rev: '₹150K', bookings: '1,362' },
-                            ]
+                            {verticalData
                             .filter(vert => serviceFilter === 'All' || vert.filterKey === serviceFilter)
                             .map((vert, i) => (
                                 <div key={i} className="flex items-center justify-between py-4 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors rounded-xl px-2">

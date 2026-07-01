@@ -11,6 +11,7 @@ import {
 import { useState } from 'react';
 import { getAuthUser, logout } from '@/lib/auth';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useAdminFilter } from '@/context/AdminFilterContext';
 
 const adminNav = [
        {
@@ -126,7 +127,7 @@ export default function AdminSidebar() {
 
        if (!user) return null;
 
-       const [serviceFilter, setServiceFilter] = useState('Hotel'); // Default to Hotel
+       const { serviceFilter, setServiceFilter } = useAdminFilter();
 
        // Filter sidebar items based on RBAC permissions AND service filter
        const filteredNav = adminNav.filter(group => {
