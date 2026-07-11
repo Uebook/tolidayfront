@@ -24,6 +24,7 @@ const adminNav = [
                      { href: '/admin/bookings', label: 'Master Bookings List' },
                      { href: '/admin/finance/ledger', label: 'Global Transactions' },
                      { href: '/admin/consumer-users', label: 'All Consumers (KYC)' },
+                     { href: '/admin/cms', label: 'Website CMS Manager' },
               ],
        },
        {
