@@ -13,21 +13,20 @@ const nextConfig: NextConfig = {
     workerThreads: false,
     cpus: 1,
   },
-  async rewrites() {
-    return [
-      {
-        source: '/staff/:path*',
-        destination: '/hotel/staff/:path*',
-      },
-      {
-        source: '/rooms/:path*',
-        destination: '/hotel/rooms/:path*',
-      },
-      {
-        source: '/api/:path*',
-        destination: `${BACKEND_URL}/api/:path*`,
-      },
+  webpack: (config, { dev, isServer }) => {
+    // Disable Webpack's CaseSensitivePathsPlugin warning and behavior to avoid Windows folder casing mismatches
+    config.resolve.symlinks = false;
+    
+    // Ignore all Webpack warnings to prevent memory exhaustion and crashes on Plesk
+    config.ignoreWarnings = [
+      /multiple modules with names that only differ in casing/i,
+      (warning: any) => true,
     ];
+
+    // Disable caching to prevent "Unable to snapshot resolve dependencies" errors and reduce memory usage on Plesk
+    config.cache = false;
+
+    return config;
   },
 };
 

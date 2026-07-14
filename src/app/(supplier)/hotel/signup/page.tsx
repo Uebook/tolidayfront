@@ -10,6 +10,19 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 
+const CITIES = [
+       "Mumbai", "Delhi", "Bengaluru", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Jaipur", 
+       "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam", "Pimpri-Chinchwad", "Patna", "Vadodara", 
+       "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot", "Kalyan-Dombivli", "Vasai-Virar", "Varanasi", 
+       "Srinagar", "Aurangabad", "Dhanbad", "Amritsar", "Navi Mumbai", "Allahabad", "Ranchi", "Howrah", "Coimbatore", "Jabalpur", 
+       "Gwalior", "Vijayawada", "Jodhpur", "Madurai", "Raipur", "Kota", "Guwahati", "Chandigarh", "Solapur", "Hubli-Dharwad", 
+       "Bareilly", "Moradabad", "Mysore", "Gurgaon", "Aligarh", "Jalandhar", "Tiruchirappalli", "Bhubaneswar", "Salem", 
+       "Mira-Bhayandar", "Thiruvananthapuram", "Bhiwandi", "Saharanpur", "Gorakhpur", "Guntur", "Bikaner", "Amravati", "Noida", 
+       "Jamshedpur", "Bhilai", "Cuttack", "Firozabad", "Kochi", "Bhavnagar", "Dehradun", "Durgapur", "Asansol", "Nanded", 
+       "Kolhapur", "Ajmer", "Gulbarga", "Jamnagar", "Ujjain", "Loni", "Siliguri", "Jhansi", "Ulhasnagar", "Nellore", "Jammu", 
+       "Sangli-Miraj & Kupwad", "Belgaum", "Mangalore", "Ambattur", "Tirunelveli", "Malegaon", "Gaya", "Jalgaon", "Udaipur", "Maheshtala"
+];
+
 export default function SignupPage() {
        const router = useRouter();
        const [step, setStep] = useState(1);
@@ -18,6 +31,7 @@ export default function SignupPage() {
        const [showPassword, setShowPassword] = useState(false);
        const [error, setError] = useState('');
        const [isSignedUp, setIsSignedUp] = useState(false);
+       const [isOtherCity, setIsOtherCity] = useState(false);
 
        // Form State
        const [formData, setFormData] = useState({
@@ -28,6 +42,8 @@ export default function SignupPage() {
               hotelName: '',
               propertyType: 'Hotel',
               city: '',
+              latitude: '',
+              longitude: '',
               address: '',
               // Banking
               accountHolder: '',
@@ -90,6 +106,9 @@ export default function SignupPage() {
                             businessName: formData.hotelName, // Mapping hotelName to businessName for profile
                             businessType: formData.propertyType,
                             city: formData.city,
+                            latitude: formData.latitude,
+                            longitude: formData.longitude,
+                            address: formData.address,
                             bankHolder: formData.accountHolder,
                             bankName: formData.bankName,
                             bankAccount: formData.accountNumber,
@@ -255,12 +274,51 @@ export default function SignupPage() {
                                                                       </div>
                                                                       <div className="space-y-2">
                                                                              <label className="text-xs font-medium text-[hsl(var(--foreground))]/70 ml-1 uppercase tracking-wider">City</label>
-                                                                             <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="New Delhi" className="form-input" required />
+                                                                             <select 
+                                                                                    value={isOtherCity ? 'Other' : (formData.city && CITIES.includes(formData.city) ? formData.city : (formData.city ? 'Other' : ''))} 
+                                                                                    onChange={(e) => {
+                                                                                           if (e.target.value === 'Other') {
+                                                                                                  setIsOtherCity(true);
+                                                                                                  setFormData(prev => ({...prev, city: ''}));
+                                                                                           } else {
+                                                                                                  setIsOtherCity(false);
+                                                                                                  setFormData(prev => ({...prev, city: e.target.value}));
+                                                                                           }
+                                                                                    }}
+                                                                                    className="form-input"
+                                                                                    required={!isOtherCity}
+                                                                             >
+                                                                                    <option value="" disabled>Select City</option>
+                                                                                    {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                                                                    <option value="Other">Other</option>
+                                                                             </select>
+                                                                             {(isOtherCity || (!CITIES.includes(formData.city) && formData.city !== '')) && (
+                                                                                    <input
+                                                                                           type="text"
+                                                                                           name="city"
+                                                                                           value={formData.city}
+                                                                                           onChange={handleInputChange}
+                                                                                           placeholder="Enter your city"
+                                                                                           className="form-input mt-2"
+                                                                                           required
+                                                                                    />
+                                                                             )}
+                                                                      </div>
+                                                               </div>
+                                                               <div className="grid grid-cols-2 gap-4">
+                                                                      <div className="space-y-2">
+                                                                             <label className="text-xs font-medium text-[hsl(var(--foreground))]/70 ml-1 uppercase tracking-wider">Latitude</label>
+                                                                             <input type="text" name="latitude" value={formData.latitude} onChange={handleInputChange} placeholder="e.g. 28.7041" className="form-input" />
+                                                                      </div>
+                                                                      <div className="space-y-2">
+                                                                             <label className="text-xs font-medium text-[hsl(var(--foreground))]/70 ml-1 uppercase tracking-wider">Longitude</label>
+                                                                             <input type="text" name="longitude" value={formData.longitude} onChange={handleInputChange} placeholder="e.g. 77.1025" className="form-input" />
                                                                       </div>
                                                                </div>
                                                                <div className="space-y-2">
                                                                       <label className="text-xs font-medium text-[hsl(var(--foreground))]/70 ml-1 uppercase tracking-wider">Complete Address</label>
-                                                                      <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder="Plot 12, Sector 44, Gurgaon..." className="form-input min-h-[80px] resize-none"></textarea>
+                                                                      <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder="E.g. Plot 12, Sector 44, Near Metro Station, Gurgaon, Haryana 122003" className="form-input min-h-[80px] resize-none" required></textarea>
+                                                                      <p className="text-[10px] text-muted-foreground ml-1">Please provide the full proper address including street, landmark, and pincode.</p>
                                                                </div>
                                                                <div className="flex gap-4 mt-4">
                                                                       <button type="button" onClick={prevStep} className="flex-1 py-4 bg-[var(--table-header)] hover:bg-[var(--table-header)] rounded-xl text-[hsl(var(--foreground))] font-medium border border-[var(--glass-border-light)] transition-all flex items-center justify-center gap-2">

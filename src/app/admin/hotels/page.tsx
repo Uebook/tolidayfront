@@ -433,15 +433,19 @@ export default function AdminHotelsPage() {
                                                           <div className="space-y-4">
                                                               <div className="space-y-1">
                                                                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Name</div>
-                                                                  <div className="text-sm font-bold text-foreground">{selectedHotel.bankAccountName || 'N/A'}</div>
+                                                                  <div className="text-sm font-bold text-foreground">{selectedHotel.bankHolder || 'N/A'}</div>
+                                                              </div>
+                                                              <div className="space-y-1">
+                                                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bank Name</div>
+                                                                  <div className="text-sm font-bold text-foreground">{selectedHotel.bankName || 'N/A'}</div>
                                                               </div>
                                                               <div className="space-y-1">
                                                                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Number</div>
-                                                                  <div className="text-sm font-bold text-foreground">{selectedHotel.bankAccountNumber || 'N/A'}</div>
+                                                                  <div className="text-sm font-bold text-foreground">{selectedHotel.bankAccount || 'N/A'}</div>
                                                               </div>
                                                               <div className="space-y-1">
                                                                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">IFSC Code</div>
-                                                                  <div className="text-sm font-bold text-foreground">{selectedHotel.ifscCode || 'N/A'}</div>
+                                                                  <div className="text-sm font-bold text-foreground">{selectedHotel.bankIfsc || 'N/A'}</div>
                                                               </div>
                                                           </div>
                                                       </div>

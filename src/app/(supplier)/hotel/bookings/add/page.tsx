@@ -39,7 +39,12 @@ export default function AddBookingPage() {
                      router.push('/hotel/bookings');
               },
               onError: (error: any) => {
-                     const msg = error.response?.data?.message || 'Failed to save booking';
+                     let msg = 'Failed to save booking';
+                     if (error.response?.data?.message) {
+                            msg = error.response.data.message;
+                     } else if (error.message === 'Network Error') {
+                            msg = 'Network Error: Please check your connection or CORS settings. If using a local IP, try localhost.';
+                     }
                      setErrorMsg(Array.isArray(msg) ? msg.join(', ') : msg);
               }
        });

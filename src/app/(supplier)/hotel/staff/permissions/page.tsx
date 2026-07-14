@@ -65,6 +65,8 @@ const permissionGroups = [
 ];
 
 export default function PermissionsMatrixPage() {
+    const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
+
     return (
         <div>
             <Topbar title="Permissions Matrix" subtitle="Understand what actions each role can perform" />
@@ -74,6 +76,9 @@ export default function PermissionsMatrixPage() {
                     <Link href="/hotel/staff" className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-[hsl(var(--foreground))] text-[hsl(var(--muted-foreground))]">
                         <ArrowLeft size={16} /> Back to Staff Management
                     </Link>
+                    <button onClick={() => setIsCreateRoleOpen(true)} className="btn-primary px-5 py-2 text-sm">
+                        Create Custom Role
+                    </button>
                 </div>
 
                 <div className="glass-card overflow-hidden border-t-0 bg-[rgba(16,26,40,0.7)]">
@@ -144,8 +149,39 @@ export default function PermissionsMatrixPage() {
                         <p className="text-sm text-[hsl(var(--muted-foreground))]">Restricted specifically to booking management and check-ins. No access to financial data or rate configurations.</p>
                     </div>
                 </div>
-
             </div>
+
+            {/* Create Role Modal */}
+            {isCreateRoleOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-[hsl(var(--card))] border border-[var(--glass-border)] rounded-2xl w-full max-w-lg shadow-2xl animate-fadeIn">
+                        <div className="flex items-center justify-between p-5 border-b border-[var(--glass-border-light)]">
+                            <h3 className="font-bold text-lg text-[hsl(var(--foreground))]">Create Custom Role</h3>
+                            <button onClick={() => setIsCreateRoleOpen(false)} className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-5">
+                            <div>
+                                <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1.5 block">Role Name</label>
+                                <input type="text" placeholder="e.g. Housekeeping Lead" className="form-input" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1.5 block">Description</label>
+                                <textarea placeholder="Describe the responsibilities of this role..." className="form-input min-h-[80px] resize-y" />
+                            </div>
+                            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 text-sm flex items-start gap-3">
+                                <Shield className="shrink-0 mt-0.5" size={18} />
+                                <p>Custom roles will allow you to pick and choose specific permissions for each group. This feature is currently in preview.</p>
+                            </div>
+                        </div>
+                        <div className="p-5 border-t border-[var(--glass-border-light)] flex justify-end gap-3 bg-[var(--table-header)] rounded-b-2xl">
+                            <button onClick={() => setIsCreateRoleOpen(false)} className="px-5 py-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">Cancel</button>
+                            <button onClick={() => { setIsCreateRoleOpen(false); alert('Custom Role feature is coming soon!'); }} className="btn-primary px-6 py-2">Create Role</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

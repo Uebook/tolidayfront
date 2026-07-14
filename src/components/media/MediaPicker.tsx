@@ -43,9 +43,7 @@ export default function MediaPicker({ onSelect, selectedUrls, maxFiles = 10 }: M
                      formData.append('hotelId', hotelId || '');
                      formData.append('category', 'Rooms');
 
-                     await api.post('/media/upload', formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' },
-                     });
+                     await api.post('/media/upload', formData);
               },
               onSuccess: () => {
                      queryClient.invalidateQueries({ queryKey: ['media'] });

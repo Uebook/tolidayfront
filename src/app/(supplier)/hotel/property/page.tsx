@@ -35,6 +35,7 @@ export default function PropertyPage() {
         name: '', description: '', contactNumber: '', email: '', website: '',
         address: '', city: '', pinCode: '', checkInTime: '', checkOutTime: '',
         maxAdults: '', maxChildren: '', childPolicy: '', cancellationPolicy: '', petPolicy: '',
+        coupleRules: '', mustReadRules: '', otherRules: '',
         images: [] as string[],
         latitude: '', longitude: ''
     });
@@ -51,6 +52,12 @@ export default function PropertyPage() {
         if (hotel) {
             setStars(hotel.stars || 3);
             setSelectedAmenities(hotel.amenities || []);
+            
+            const pRules = hotel.propertyRules || [];
+            const coupleRules = pRules.filter((r: string) => r.startsWith('Guest Profile|')).map((r: string) => r.split('|')[1]).join('\n');
+            const mustReadRules = pRules.filter((r: string) => r.startsWith('Must Read Rules|')).map((r: string) => r.split('|')[1]).join('\n');
+            const otherRules = pRules.filter((r: string) => !r.startsWith('Guest Profile|') && !r.startsWith('Must Read Rules|')).map((r: string) => r.includes('|') ? r.split('|')[1] : r).join('\n');
+
             setFormData({
                 name: hotel.name || '', description: hotel.description || '',
                 contactNumber: hotel.contactNumber || '', email: hotel.email || '', website: hotel.website || '',
@@ -58,6 +65,7 @@ export default function PropertyPage() {
                 checkInTime: hotel.checkInTime || '', checkOutTime: hotel.checkOutTime || '',
                 maxAdults: hotel.maxAdults || '', maxChildren: hotel.maxChildren || '',
                 childPolicy: hotel.childPolicy || '', cancellationPolicy: hotel.cancellationPolicy || '', petPolicy: hotel.petPolicy || '',
+                coupleRules, mustReadRules, otherRules,
                 images: hotel.images || [],
                 latitude: hotel.latitude !== null && hotel.latitude !== undefined ? String(hotel.latitude) : '',
                 longitude: hotel.longitude !== null && hotel.longitude !== undefined ? String(hotel.longitude) : '',
@@ -76,8 +84,15 @@ export default function PropertyPage() {
     });
 
     const handleSave = () => {
+        const rules = [
+            ...formData.coupleRules.split('\n').filter(Boolean).map(r => `Guest Profile|${r.trim()}`),
+            ...formData.mustReadRules.split('\n').filter(Boolean).map(r => `Must Read Rules|${r.trim()}`),
+            ...formData.otherRules.split('\n').filter(Boolean).map(r => r.trim())
+        ];
+
         mutation.mutate({ 
             ...formData, 
+            propertyRules: rules,
             stars, 
             amenities: selectedAmenities,
             latitude: formData.latitude ? parseFloat(formData.latitude) : null,
@@ -214,7 +229,6 @@ export default function PropertyPage() {
                                 <input value={formData.maxChildren} onChange={(e) => setFormData({ ...formData, maxChildren: e.target.value })} className="form-input" />
                             </div>
                         </div>
-                        <div className="space-y-3">
                             <div>
                                 <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1.5 block">Child Policy</label>
                                 <textarea value={formData.childPolicy} onChange={(e) => setFormData({ ...formData, childPolicy: e.target.value })} className="form-input min-h-[80px] resize-none" />
@@ -226,6 +240,21 @@ export default function PropertyPage() {
                             <div>
                                 <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1.5 block">Pet Policy</label>
                                 <textarea value={formData.petPolicy} onChange={(e) => setFormData({ ...formData, petPolicy: e.target.value })} className="form-input min-h-[80px] resize-none" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1.5 block">Couple/Bachelor Rules</label>
+                                <p className="text-[10px] text-[hsl(var(--muted-foreground))] mb-2">Enter couple or bachelor specific rules.</p>
+                                <textarea value={formData.coupleRules} onChange={(e) => setFormData({ ...formData, coupleRules: e.target.value })} placeholder="e.g. Unmarried couples allowed. Local ids are allowed." className="form-input min-h-[60px] resize-y" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1.5 block">Must Read Rules</label>
+                                <p className="text-[10px] text-[hsl(var(--muted-foreground))] mb-2">Enter each rule on a new line.</p>
+                                <textarea value={formData.mustReadRules} onChange={(e) => setFormData({ ...formData, mustReadRules: e.target.value })} placeholder="e.g. Primary Guest should be atleast 18 years of age." className="form-input min-h-[80px] resize-y" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1.5 block">Other Property Rules</label>
+                                <p className="text-[10px] text-[hsl(var(--muted-foreground))] mb-2">Enter each rule on a new line (e.g., breakfast fees, incidental charges).</p>
+                                <textarea value={formData.otherRules} onChange={(e) => setFormData({ ...formData, otherRules: e.target.value })} placeholder="e.g. Extra-person charges may apply..." className="form-input min-h-[80px] resize-y" />
                             </div>
                         </div>
                     </div>

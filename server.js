@@ -3,7 +3,8 @@ const { parse } = require('url');
 const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
+const dir = __dirname.toLowerCase(); // Force lowercase path resolution to match Windows filesystem casing
+const app = next({ dev, dir });
 const handle = app.getRequestHandler();
 
 const port = process.env.PORT || 3000;

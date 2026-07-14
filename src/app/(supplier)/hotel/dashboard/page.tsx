@@ -129,7 +129,6 @@ function Sparkline({ points, color }: { points: number[]; color: string }) {
 
 export default function DashboardPage() {
     const [user, setUser] = useState<any>(null);
-    const [isDemoMode, setIsDemoMode] = useState(true);
     const [currentDate, setCurrentDate] = useState('');
 
     useEffect(() => {
@@ -154,34 +153,7 @@ export default function DashboardPage() {
         );
     }
 
-    const demoSummary = {
-        revenue: 342850,
-        checkInsToday: 12,
-        pendingBookings: 5,
-        cancellations: 2,
-        activeStay: 38,
-        checkOutsToday: 8,
-        adr: 6850,
-        revpar: 4795,
-        recentBookings: [
-            { ref: 'TX-4920', guest: 'Rahul Sharma', room: 'Deluxe Room', checkIn: '2026-06-29', status: 'checked_in', amount: '₹14,500' },
-            { ref: 'TX-4919', guest: 'Ananya Iyer', room: 'Executive Suite', checkIn: '2026-06-29', status: 'confirmed', amount: '₹22,000' },
-            { ref: 'TX-4918', guest: 'Amit Patel', room: 'Standard Room', checkIn: '2026-06-29', status: 'confirmed', amount: '₹7,200' },
-            { ref: 'TX-4917', guest: 'David Miller', room: 'Deluxe Room', checkIn: '2026-06-28', status: 'checked_in', amount: '₹14,500' },
-            { ref: 'TX-4916', guest: 'Sneha Reddy', room: 'Standard Room', checkIn: '2026-06-28', status: 'cancelled', amount: '₹7,200' },
-        ],
-        revenueTrend: [
-            { day: 'Mon', revenue: 42000, bookings: 4 },
-            { day: 'Tue', revenue: 38000, bookings: 3 },
-            { day: 'Wed', revenue: 52000, bookings: 5 },
-            { day: 'Thu', revenue: 48000, bookings: 4 },
-            { day: 'Fri', revenue: 65000, bookings: 6 },
-            { day: 'Sat', revenue: 72000, bookings: 7 },
-            { day: 'Sun', revenue: 59000, bookings: 5 },
-        ]
-    };
-
-    const activeSummary = isDemoMode ? demoSummary : (summary || {
+    const activeSummary = summary || {
         revenue: 0,
         checkInsToday: 0,
         pendingBookings: 0,
@@ -200,7 +172,7 @@ export default function DashboardPage() {
             { day: 'Sat', revenue: 0 },
             { day: 'Sun', revenue: 0 },
         ]
-    });
+    };
 
     const stats = [
         {
@@ -306,17 +278,6 @@ export default function DashboardPage() {
                     <div>
                         <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Current Date</div>
                         <div className="text-sm font-extrabold text-foreground">{currentDate || 'Loading date...'}</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Demo Preview</span>
-                        <label className="ios-switch">
-                            <input 
-                                type="checkbox" 
-                                checked={isDemoMode}
-                                onChange={(e) => setIsDemoMode(e.target.checked)}
-                            />
-                            <span className="ios-switch-slider"></span>
-                        </label>
                     </div>
                 </div>
 
