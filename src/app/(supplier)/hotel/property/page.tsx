@@ -257,7 +257,6 @@ export default function PropertyPage() {
                                 <textarea value={formData.otherRules} onChange={(e) => setFormData({ ...formData, otherRules: e.target.value })} placeholder="e.g. Extra-person charges may apply..." className="form-input min-h-[80px] resize-y" />
                             </div>
                         </div>
-                    </div>
                 )}
 
                 {/* Amenities Tab */}
