@@ -90,13 +90,15 @@ export default function PropertyPage() {
             ...formData.otherRules.split('\n').filter(Boolean).map(r => r.trim())
         ];
 
+        const { coupleRules, mustReadRules, otherRules, ...validData } = formData;
+
         mutation.mutate({ 
-            ...formData, 
+            ...validData, 
             propertyRules: rules,
             stars, 
             amenities: selectedAmenities,
-            latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-            longitude: formData.longitude ? parseFloat(formData.longitude) : null
+            latitude: validData.latitude ? parseFloat(validData.latitude as string) : null,
+            longitude: validData.longitude ? parseFloat(validData.longitude as string) : null
         });
     };
 
