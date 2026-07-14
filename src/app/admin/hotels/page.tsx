@@ -129,7 +129,7 @@ export default function AdminHotelsPage() {
                                           <input 
                                                  type="number" 
                                                  defaultValue={hotel.rank || 0}
-                                                 className="w-12 text-sm font-black bg-transparent border-none focus:outline-none text-center"
+                                                 className="w-12 text-sm font-black text-slate-900 bg-transparent border-none focus:outline-none text-center"
                                                  onBlur={(e) => {
                                                         const newRank = parseInt(e.target.value) || 0;
                                                         if (newRank !== (hotel.rank || 0)) {

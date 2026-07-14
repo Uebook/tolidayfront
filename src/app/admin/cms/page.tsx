@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import Topbar from '@/components/layout/Topbar';
+import MediaSelector from '@/components/ui/MediaSelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Loader2, Image as ImageIcon, Plus, Trash2, Edit2, 
@@ -256,12 +257,11 @@ export default function CMSPage() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-foreground/75 uppercase tracking-wide">Media Background URL</label>
-                      <input
-                        type="text"
-                        value={heroForm.mediaUrl}
-                        onChange={(e) => setHeroForm({ ...heroForm, mediaUrl: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 outline-none text-sm focus:border-blue-500/40 transition-colors"
-                        required
+                      <MediaSelector
+                        multiple={false}
+                        selectedImages={heroForm.mediaUrl ? [heroForm.mediaUrl] : []}
+                        onSelect={(urls) => setHeroForm({ ...heroForm, mediaUrl: urls[0] || '' })}
+                        category="banners"
                       />
                     </div>
                   </div>
@@ -382,13 +382,11 @@ export default function CMSPage() {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-foreground/75 uppercase tracking-wide">Banner Image URL</label>
-                    <input
-                      type="text"
-                      value={promoForm.imageUrl}
-                      onChange={(e) => setPromoForm({ ...promoForm, imageUrl: e.target.value })}
-                      placeholder="https://example.com/banner.jpg"
-                      className="w-full px-4 py-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 outline-none text-sm focus:border-blue-500/40 transition-colors"
-                      required
+                    <MediaSelector
+                      multiple={false}
+                      selectedImages={promoForm.imageUrl ? [promoForm.imageUrl] : []}
+                      onSelect={(urls) => setPromoForm({ ...promoForm, imageUrl: urls[0] || '' })}
+                      category="banners"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -503,13 +501,11 @@ export default function CMSPage() {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-foreground/75 uppercase tracking-wide">Image URL</label>
-                    <input
-                      type="text"
-                      value={destForm.imageUrl}
-                      onChange={(e) => setDestForm({ ...destForm, imageUrl: e.target.value })}
-                      placeholder="https://example.com/dest.jpg"
-                      className="w-full px-4 py-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 outline-none text-sm focus:border-blue-500/40 transition-colors"
-                      required
+                    <MediaSelector
+                      multiple={false}
+                      selectedImages={destForm.imageUrl ? [destForm.imageUrl] : []}
+                      onSelect={(urls) => setDestForm({ ...destForm, imageUrl: urls[0] || '' })}
+                      category="destinations"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -650,13 +646,11 @@ export default function CMSPage() {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-foreground/75 uppercase tracking-wide">Cover Image URL</label>
-                    <input
-                      type="text"
-                      value={blogForm.image}
-                      onChange={(e) => setBlogForm({ ...blogForm, image: e.target.value })}
-                      placeholder="https://example.com/blog.jpg"
-                      className="w-full px-4 py-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 outline-none text-sm focus:border-blue-500/40 transition-colors"
-                      required
+                    <MediaSelector
+                      multiple={false}
+                      selectedImages={blogForm.image ? [blogForm.image] : []}
+                      onSelect={(urls) => setBlogForm({ ...blogForm, image: urls[0] || '' })}
+                      category="blogs"
                     />
                   </div>
                   <div className="space-y-1.5">
