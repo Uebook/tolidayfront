@@ -5,12 +5,15 @@ import Topbar from '@/components/layout/Topbar';
 import api from '@/lib/api';
 import { 
     IndianRupee, Wallet, ArrowUpRight, ArrowDownRight, Clock, 
-    CheckCircle2, AlertCircle, FileText, Filter, Zap, RefreshCcw
+    CheckCircle2, AlertCircle, FileText, Filter, Zap, RefreshCcw, Download
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function AdminFinancePage() {
     const queryClient = useQueryClient();
+    const [payoutsFilter, setPayoutsFilter] = useState('ALL');
+    const [ledgerFilter, setLedgerFilter] = useState('ALL');
+    const [dateFrom, setDateFrom] = useState('');
 
     const { data: payouts = [], isLoading: loadingPayouts } = useQuery({
         queryKey: ['admin-payouts'],
@@ -55,12 +58,56 @@ export default function AdminFinancePage() {
 
     if (loadingPayouts || loadingLedger) return <div className="p-10 text-center font-black text-muted-foreground animate-pulse">Initializing Financial Matrix...</div>;
 
+    const filteredPayouts = payouts.filter((p: any) => {
+        const matchesStatus = payoutsFilter === 'ALL' || p.status === payoutsFilter;
+        const matchesDate = !dateFrom || new Date(p.createdAt) >= new Date(dateFrom);
+        return matchesStatus && matchesDate;
+    });
+    
+    const filteredLedger = ledger.filter((l: any) => {
+        const matchesVertical = ledgerFilter === 'ALL' || l.vertical === ledgerFilter;
+        const matchesDate = !dateFrom || new Date(l.createdAt) >= new Date(dateFrom);
+        return matchesVertical && matchesDate;
+    });
+
     const pendingPayouts = payouts.filter((p: any) => p.status === 'PENDING');
     const totalPendingAmount = pendingPayouts.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+    const exportPayouts = () => {
+        if (!filteredPayouts.length) return toast.error('No payouts to export');
+        const headers = ['Ref ID', 'Vendor ID', 'Vertical', 'Amount', 'Status', 'Created At'];
+        const rows = filteredPayouts.map((p: any) => [p.id, p.vendorId, p.vertical, p.amount, p.status, new Date(p.createdAt).toLocaleDateString()]);
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `payouts_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const exportLedger = () => {
+        if (!filteredLedger.length) return toast.error('No ledger entries to export');
+        const headers = ['Timestamp', 'Type', 'Amount', 'Vertical', 'Description', 'Reference ID'];
+        const rows = filteredLedger.map((l: any) => [new Date(l.createdAt).toISOString(), l.type, l.amount, l.vertical, `"${l.description}"`, l.referenceId]);
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ledger_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     return (
         <div className="p-8 lg:p-12 animate-fadeIn">
             <Topbar title="Economic Treasury" subtitle="Oversee global ledger activity and vendor settlements" />
+
+            <div className="flex justify-end mb-8">
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-white border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
@@ -114,9 +161,14 @@ export default function AdminFinancePage() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 {/* Withdrawal Requests */}
                 <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
-                    <div className="px-10 py-8 border-b border-slate-50 flex items-center justify-between">
+                    <div className="px-10 py-8 border-b border-slate-50 flex flex-wrap items-center justify-between gap-4">
                         <h3 className="text-xl font-black text-foreground tracking-tight">Withdrawal Requests</h3>
-                        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full uppercase tracking-widest">Action Required</span>
+                        <div className="flex items-center gap-3">
+                            <select value={payoutsFilter} onChange={(e) => setPayoutsFilter(e.target.value)} className="bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs font-black uppercase tracking-widest text-slate-600 focus:outline-none">
+                                <option value="ALL">All Status</option><option value="PENDING">Pending</option><option value="COMPLETED">Completed</option>
+                            </select>
+                            <button onClick={exportPayouts} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all"><Download size={14} /> Export</button>
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
@@ -130,7 +182,7 @@ export default function AdminFinancePage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {payouts.map((p: any) => (
+                                {filteredPayouts.map((p: any) => (
                                     <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-10 py-6">
                                             <div className="font-black text-sm text-foreground tracking-tight">#{p.id.substring(0, 8)}</div>
@@ -160,9 +212,9 @@ export default function AdminFinancePage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {payouts.length === 0 && (
+                                {filteredPayouts.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="text-center py-20 text-slate-300 font-black uppercase tracking-widest text-[10px]">No active requests</td>
+                                        <td colSpan={5} className="text-center py-20 text-slate-300 font-black uppercase tracking-widest text-[10px]">No matching requests</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -172,9 +224,14 @@ export default function AdminFinancePage() {
 
                 {/* System Ledger Entries */}
                 <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
-                    <div className="px-10 py-8 border-b border-slate-50 flex items-center justify-between">
+                    <div className="px-10 py-8 border-b border-slate-50 flex flex-wrap items-center justify-between gap-4">
                         <h3 className="text-xl font-black text-foreground tracking-tight">System Ledger Activity</h3>
-                        <button className="p-3 bg-slate-50 hover:bg-blue-600 hover:text-foreground rounded-xl transition-all shadow-sm"><Filter size={16} /></button>
+                        <div className="flex items-center gap-3">
+                            <select value={ledgerFilter} onChange={(e) => setLedgerFilter(e.target.value)} className="bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-xs font-black uppercase tracking-widest text-slate-600 focus:outline-none">
+                                <option value="ALL">All Verticals</option><option value="HOTEL">Hotel</option><option value="CAB">Cab</option><option value="BUS">Bus</option><option value="TOUR">Tour</option><option value="FLIGHT">Flight</option>
+                            </select>
+                            <button onClick={exportLedger} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all"><Download size={14} /> Export</button>
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
@@ -186,7 +243,7 @@ export default function AdminFinancePage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {ledger.map((entry: any) => (
+                                {filteredLedger.map((entry: any) => (
                                     <tr key={entry.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                                             {new Date(entry.createdAt).toLocaleDateString()}

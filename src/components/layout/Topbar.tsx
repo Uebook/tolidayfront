@@ -1,122 +1,265 @@
 'use client';
 
-import { Bell, Search, ChevronDown, User, LogOut, Settings } from 'lucide-react';
+import { Bell, Moon, Sun, ChevronDown, User, LogOut, Settings, Menu } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { getAuthUser, logout } from '@/lib/auth';
+import { useTheme } from 'next-themes';
+
+import { useAdminFilter } from '@/context/AdminFilterContext';
 
 interface TopbarProps {
-    title: string;
-    subtitle?: string;
+  title: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
 }
 
-export default function Topbar({ title, subtitle }: TopbarProps) {
-    const [user, setUser] = useState<any>(null);
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const pathname = usePathname();
+export default function Topbar({ title, subtitle, actions }: TopbarProps) {
+  const [user, setUser] = useState<any>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const { theme, setTheme } = useTheme();
+  const { serviceFilter, setServiceFilter } = useAdminFilter();
 
-    useEffect(() => {
-        setUser(getAuthUser());
-    }, []);
+  useEffect(() => {
+    setUser(getAuthUser());
+  }, []);
 
-    const verticalPrefix = useMemo(() => {
-        const parts = pathname.split('/');
-        return parts.length > 1 ? `/${parts[1]}` : '/hotel';
-    }, [pathname]);
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications', user?.hotel_id],
+    queryFn: async () => {
+      if (!user?.hotel_id) return [];
+      const res = await api.get(`/notifications?hotelId=${user.hotel_id}`);
+      return res.data || [];
+    },
+    enabled: !!user?.hotel_id,
+    refetchInterval: 30000,
+  });
 
-    const hotelId = user?.hotel_id;
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
 
-    const { data: notifications = [] } = useQuery({
-        queryKey: ['notifications', hotelId],
-        queryFn: async () => {
-            if (!hotelId) return [];
-            const res = await api.get(`/notifications?hotelId=${hotelId}`);
-            return res.data || [];
-        },
-        enabled: !!hotelId,
-        refetchInterval: 30000,
-    });
+  const handleLogout = () => {
+    logout();
+    router.push('/admin/login');
+  };
 
-    const unreadCount = notifications.filter((n: any) => !n.read).length;
+  return (
+    <header className="admin-topbar">
+      {/* Left: Page title & Service Filter Dropdown */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div>
+          <h1 className="page-title" style={{ fontSize: 16, marginBottom: 0 }}>{title}</h1>
+          {subtitle && (
+            <p className="page-subtitle" style={{ fontSize: 12, marginTop: 0 }}>{subtitle}</p>
+          )}
+        </div>
 
-    return (
-        <header className="sticky top-0 z-40 flex items-center justify-between px-8 py-4 bg-white/40 dark:bg-slate-900/30 backdrop-blur-md border-b border-border/10">
-            <div className="animate-fadeIn">
-                <h1 className="text-lg font-extrabold text-foreground tracking-tight leading-tight">{title}</h1>
-                {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        {/* Global Service Filter Dropdown */}
+        <select
+          value={serviceFilter}
+          onChange={(e) => setServiceFilter(e.target.value)}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '6px',
+            border: '1px solid hsl(var(--border))',
+            background: 'var(--card)',
+            color: 'hsl(var(--foreground))',
+            fontSize: '12.5px',
+            fontWeight: 600,
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <option value="All">All Services</option>
+          <option value="Hotel">Hotels</option>
+          <option value="Packages">Tours & Packages</option>
+          <option value="Buses">Buses</option>
+          <option value="Cabs">Cabs</option>
+        </select>
+      </div>
+
+      {/* Right: actions + icons */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* Page-level actions */}
+        {actions && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{actions}</div>}
+
+        {/* Dark mode toggle */}
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          style={{
+            width: 34, height: 34,
+            border: '1px solid hsl(var(--border))',
+            borderRadius: 7,
+            background: 'transparent',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'hsl(var(--muted-foreground))',
+            transition: 'all 0.15s',
+          }}
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'hsl(var(--muted))';
+            e.currentTarget.style.color = 'hsl(var(--foreground))';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
+          }}
+        >
+          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+
+        {/* Notifications */}
+        <button
+          style={{
+            width: 34, height: 34,
+            border: '1px solid hsl(var(--border))',
+            borderRadius: 7,
+            background: 'transparent',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'hsl(var(--muted-foreground))',
+            position: 'relative',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'hsl(var(--muted))';
+            e.currentTarget.style.color = 'hsl(var(--foreground))';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
+          }}
+        >
+          <Bell size={15} />
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute', top: 5, right: 5,
+              width: 7, height: 7,
+              background: '#ef4444',
+              borderRadius: '50%',
+              border: '1.5px solid white',
+            }} />
+          )}
+        </button>
+
+        {/* User profile pill */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '5px 10px 5px 6px',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: 8,
+              background: isProfileOpen ? 'hsl(var(--muted))' : 'transparent',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { if (!isProfileOpen) e.currentTarget.style.background = 'hsl(var(--muted))'; }}
+            onMouseLeave={e => { if (!isProfileOpen) e.currentTarget.style.background = 'transparent'; }}
+          >
+            {/* Avatar */}
+            <div style={{
+              width: 28, height: 28,
+              borderRadius: '50%',
+              background: 'hsl(var(--primary))',
+              color: 'white',
+              fontSize: 12, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {user?.name?.charAt(0).toUpperCase() || 'A'}
             </div>
+            {/* Name */}
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--foreground))', lineHeight: 1.2 }}>
+                {user?.name || 'Admin User'}
+              </div>
+              <div style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))' }}>
+                {user?.role || 'Admin'}
+              </div>
+            </div>
+            <ChevronDown size={12} style={{ color: 'hsl(var(--muted-foreground))', transform: isProfileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+          </button>
 
-            <div className="flex items-center gap-4">
-                {/* Search */}
-                <div className="relative hidden md:block group">
-                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-blue-500" />
-                    <input
-                        placeholder="Search..."
-                        className="w-64 bg-black/[0.03] dark:bg-white/[0.04] border border-border/10 rounded-full pl-10 pr-4 py-2 text-xs text-foreground placeholder-muted-foreground/50 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500/50 outline-none transition-all duration-300"
-                    />
+          {/* Dropdown */}
+          {isProfileOpen && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setIsProfileOpen(false)} />
+              <div style={{
+                position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+                width: 200,
+                background: 'var(--topbar-bg)',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: 10,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                overflow: 'hidden',
+                zIndex: 50,
+              }} className="animate-fadeIn">
+                {/* Email */}
+                <div style={{ padding: '10px 14px', borderBottom: '1px solid hsl(var(--border))' }}>
+                  <div style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Signed in as</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{user?.email || 'admin@toliday.in'}</div>
                 </div>
 
-                {/* Notifications */}
-                <button className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-all border border-transparent hover:border-border/10 active:scale-95 duration-200">
-                    <Bell size={18} />
-                    {unreadCount > 0 && (
-                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 border-2 border-white dark:border-slate-900 animate-pulse" />
-                    )}
-                </button>
-
-                {/* User Profile */}
-                <div className="relative">
-                    <button 
-                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className={`flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-xl border transition-all duration-300 ios-tap-scale ${isProfileOpen ? 'bg-black/5 dark:bg-white/5 border-border/20 shadow-inner' : 'bg-transparent border-border/10 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                {/* Actions */}
+                <div style={{ padding: 6 }}>
+                  {[
+                    { icon: User, label: 'My Profile', href: '/admin/profile' },
+                    { icon: Settings, label: 'Settings', href: '/admin/settings' },
+                  ].map(({ icon: Icon, label, href }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setIsProfileOpen(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 10px',
+                        borderRadius: 7,
+                        fontSize: 13,
+                        color: 'hsl(var(--foreground))',
+                        textDecoration: 'none',
+                        transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'hsl(var(--muted))'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-extrabold shadow-sm">
-                            {user ? user.name.charAt(0).toUpperCase() : '?'}
-                        </div>
-                        <div className="hidden lg:block text-left">
-                            <div className="text-xs font-bold text-foreground leading-none">{user ? user.name : 'User'}</div>
-                            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1 leading-none">{user ? user.role : 'Guest'}</div>
-                        </div>
-                        <ChevronDown size={12} className={`text-muted-foreground transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {/* Profile Dropdown */}
-                    {isProfileOpen && (
-                        <>
-                            <div className="fixed inset-0 z-[-1]" onClick={() => setIsProfileOpen(false)} />
-                            <div className="absolute right-0 mt-2 w-60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-2xl border border-border/15 shadow-xl py-2 animate-scaleIn overflow-hidden z-50">
-                                <div className="px-4 py-3 bg-black/[0.01] dark:bg-white/[0.01] border-b border-border/10">
-                                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Signed in as</p>
-                                    <p className="text-xs font-bold text-foreground truncate mt-1">{user?.email || 'user@example.com'}</p>
-                                </div>
-
-                                <div className="p-1.5 space-y-0.5">
-                                    <Link 
-                                        href={`${verticalPrefix}/profile`}
-                                        onClick={() => setIsProfileOpen(false)}
-                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs text-muted-foreground hover:bg-blue-600 hover:text-white transition-all duration-200 font-bold no-underline"
-                                    >
-                                        <User size={14} /> My Profile
-                                    </Link>
-                                    <button className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-xs text-muted-foreground hover:bg-blue-600 hover:text-white transition-all duration-200 font-bold">
-                                        <Settings size={14} /> Account Settings
-                                    </button>
-                                    <div className="h-px bg-border/10 my-1.5 mx-2" />
-                                    <button 
-                                        onClick={() => logout()}
-                                        className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-xs text-red-500 hover:bg-red-500/10 transition-all duration-200 font-bold"
-                                    >
-                                        <LogOut size={14} /> Logout
-                                    </button>
-                                </div>
-                            </div>
-                        </>
-                    )}
+                      <Icon size={14} />
+                      {label}
+                    </Link>
+                  ))}
+                  <div style={{ height: 1, background: 'hsl(var(--border))', margin: '4px 0' }} />
+                  <button
+                    onClick={handleLogout}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '8px 10px',
+                      borderRadius: 7,
+                      fontSize: 13,
+                      color: '#ef4444',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '100%',
+                      textAlign: 'left',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <LogOut size={14} />
+                    Logout
+                  </button>
                 </div>
-            </div>
-        </header>
-    );
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
+  );
 }

@@ -1,341 +1,478 @@
 'use client';
 
-import React from 'react';
-import { 
-       Activity, TrendingUp, Users, IndianRupee, 
-       Building2, Map, Bus, CarFront, Download, ArrowUpRight,
-       DollarSign, Clock, CalendarDays, ArrowDownRight, CheckCircle2, AlertCircle, Loader2
+import React, { useState } from 'react';
+import {
+  TrendingUp, TrendingDown, Users, IndianRupee,
+  Building2, Map, Bus, CarFront, CheckCircle2,
+  Activity, DollarSign, ArrowUpRight, Download,
+  Calendar, Clock, XCircle, AlertCircle, FileText, Check, AlertTriangle
 } from 'lucide-react';
 import Topbar from '@/components/layout/Topbar';
 import { useAdminFilter } from '@/context/AdminFilterContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { toast } from 'react-hot-toast';
+import Link from 'next/link';
 
-function AnimatedNumber({ value }: { value: number | string }) {
-    return <span>{value}</span>;
-}
+type Period = 'today' | 'week' | 'month' | 'year' | 'fy';
 
-function Sparkline({ points, color }: { points: number[]; color: string }) {
-    if (!points || points.length === 0) return null;
-    const max = Math.max(...points);
-    const min = Math.min(...points);
-    const range = max - min || 1;
-    const height = 24;
-    const width = 80;
-    const padding = 2;
-    
-    const coordinates = points.map((p, i) => {
-        const x = (i / (points.length - 1)) * (width - padding * 2) + padding;
-        const y = height - ((p - min) / range) * (height - padding * 2) - padding;
-        return `${x},${y}`;
-    });
-    
-    const pathD = `M ${coordinates.join(' L ')}`;
-    
-    return (
-        <svg className="w-20 h-6 overflow-visible" viewBox={`0 0 ${width} ${height}`}>
-            <style>{`
-                @keyframes drawPath {
-                    to {
-                        stroke-dashoffset: 0;
-                    }
-                }
-            `}</style>
-            <path
-                d={pathD}
-                fill="none"
-                stroke={color}
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                    strokeDasharray: 120,
-                    strokeDashoffset: 120,
-                    animation: 'drawPath 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards'
-                }}
-            />
-        </svg>
-    );
-}
+const PERIODS: { label: string; value: Period }[] = [
+  { label: 'Today', value: 'today' },
+  { label: 'This Week', value: 'week' },
+  { label: 'This Month', value: 'month' },
+  { label: 'This Year', value: 'year' },
+  { label: 'Financial Year', value: 'fy' },
+];
 
 export default function SuperDashboardPage() {
-    const { serviceFilter } = useAdminFilter();
+  const queryClient = useQueryClient();
+  const { serviceFilter } = useAdminFilter();
+  const [period, setPeriod] = useState<Period>('month');
+  const [selectedYear, setSelectedYear] = useState('2026');
 
-    const { data: dbStats, isLoading } = useQuery({
-        queryKey: ['admin-dashboard-stats'],
-        queryFn: async () => {
-            const res = await api.get('/admin/stats');
-            return res.data;
-        }
-    });
-
-    const formatCurrency = (val: number) => {
-        if (!val) return '₹0';
-        if (val >= 1000000) return `₹${(val / 1000000).toFixed(1)}M`;
-        if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
-        return `₹${val.toLocaleString()}`;
-    };
-
-    const formatNumber = (val: number) => {
-        if (!val) return '0';
-        return val.toLocaleString();
-    };
-
-    if (isLoading) {
-        return (
-            <div className="flex h-[80vh] items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="animate-spin text-primary" size={40} />
-                    <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Loading Analytics...</span>
-                </div>
-            </div>
-        );
+  // Stats query
+  const { data: dbStats, isLoading } = useQuery({
+    queryKey: ['admin-dashboard-stats', period],
+    queryFn: async () => {
+      const res = await api.get(`/admin/stats?period=${period}`);
+      return res.data;
     }
+  });
 
-    const rev = dbStats?.revenue || {};
-    const bookings = dbStats?.bookingsCount || {};
-    const consumers = dbStats?.consumersCount || {};
+  // Recent Bookings query
+  const { data: bookings = [], isLoading: isBookingsLoading } = useQuery({
+    queryKey: ['admin-recent-bookings'],
+    queryFn: async () => {
+      const res = await api.get('/bookings/admin/all');
+      const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      return data;
+    }
+  });
 
-    const getFilterData = () => {
-        if (serviceFilter === 'Hotel') {
-            return {
-                tgv: formatCurrency(rev.hotels),
-                bookings: formatNumber(bookings.hotels),
-                consumers: formatNumber(consumers.hotels),
-                revenue: formatCurrency(rev.hotels * 0.15),
-                sparklines: [
-                    [15, 20, 18, 30, 25, 38, 45],
-                    [20, 35, 50, 25, 40, 60, 50],
-                    [100, 120, 135, 115, 110, 125, 120],
-                    [10, 12, 14, 15, 16, 17, 19]
-                ]
-            };
-        }
-        if (serviceFilter === 'Packages') {
-            return {
-                tgv: formatCurrency(rev.packages),
-                bookings: formatNumber(bookings.packages),
-                consumers: formatNumber(consumers.packages),
-                revenue: formatCurrency(rev.packages * 0.15),
-                sparklines: [
-                    [10, 15, 12, 20, 18, 25, 30],
-                    [15, 25, 35, 20, 30, 45, 40],
-                    [60, 75, 85, 70, 65, 80, 75],
-                    [6, 8, 9, 10, 11, 12, 13]
-                ]
-            };
-        }
-        if (serviceFilter === 'Buses') {
-            return {
-                tgv: formatCurrency(rev.buses),
-                bookings: formatNumber(bookings.buses),
-                consumers: formatNumber(consumers.buses),
-                revenue: formatCurrency(rev.buses * 0.15),
-                sparklines: [
-                    [5, 8, 6, 10, 8, 12, 15],
-                    [10, 18, 25, 15, 20, 30, 28],
-                    [30, 40, 45, 35, 30, 42, 38],
-                    [2, 3, 4, 4, 5, 5, 6]
-                ]
-            };
-        }
-        if (serviceFilter === 'Cabs') {
-            return {
-                tgv: formatCurrency(rev.cabs),
-                bookings: formatNumber(bookings.cabs),
-                consumers: formatNumber(consumers.cabs),
-                revenue: formatCurrency(rev.cabs * 0.15),
-                sparklines: [
-                    [3, 5, 4, 6, 5, 8, 10],
-                    [5, 10, 15, 10, 12, 18, 16],
-                    [15, 20, 22, 18, 16, 22, 20],
-                    [1, 1, 2, 2, 2, 3, 3]
-                ]
-            };
-        }
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+      return api.patch(`/bookings/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-recent-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
+      toast.success('Booking status updated');
+    }
+  });
 
-        // All
-        return {
-            tgv: formatCurrency(rev.total),
-            bookings: formatNumber(bookings.total),
-            consumers: formatNumber(consumers.total),
-            revenue: formatCurrency(rev.total * 0.15),
-            sparklines: [
-                [30, 45, 35, 60, 50, 75, 90],
-                [50, 80, 120, 60, 100, 150, 120],
-                [200, 250, 280, 240, 230, 260, 250],
-                [20, 25, 28, 30, 32, 35, 38]
-            ]
-        };
+  const formatCurrency = (val: number) => {
+    if (!val) return '₹0';
+    if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)}Cr`;
+    if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
+    if (val >= 1000) return `₹${(val / 1000).toFixed(0)}K`;
+    return `₹${val.toLocaleString('en-IN')}`;
+  };
+
+  const formatNumber = (val: number) => {
+    if (!val) return '0';
+    return val.toLocaleString('en-IN');
+  };
+
+  const rev = dbStats?.revenue || {};
+  const bookingsCount = dbStats?.bookingsCount || {};
+  const consumers = dbStats?.consumersCount || {};
+
+  const getFilterData = () => {
+    if (serviceFilter === 'Hotel') {
+      return {
+        tgv: formatCurrency(rev.hotels || 0),
+        bookings: formatNumber(bookingsCount.hotels || 0),
+        consumers: formatNumber(consumers.hotels || 0),
+        revenue: formatCurrency((rev.hotels || 0) * 0.15),
+      };
+    }
+    if (serviceFilter === 'Packages') {
+      return {
+        tgv: formatCurrency(rev.packages || 0),
+        bookings: formatNumber(bookingsCount.packages || 0),
+        consumers: formatNumber(consumers.packages || 0),
+        revenue: formatCurrency((rev.packages || 0) * 0.15),
+      };
+    }
+    if (serviceFilter === 'Buses') {
+      return {
+        tgv: formatCurrency(rev.buses || 0),
+        bookings: formatNumber(bookingsCount.buses || 0),
+        consumers: formatNumber(consumers.buses || 0),
+        revenue: formatCurrency((rev.buses || 0) * 0.15),
+      };
+    }
+    if (serviceFilter === 'Cabs') {
+      return {
+        tgv: formatCurrency(rev.cabs || 0),
+        bookings: formatNumber(bookingsCount.cabs || 0),
+        consumers: formatNumber(consumers.cabs || 0),
+        revenue: formatCurrency((rev.cabs || 0) * 0.15),
+      };
+    }
+    return {
+      tgv: formatCurrency(rev.total || 0),
+      bookings: formatNumber(bookingsCount.total || 0),
+      consumers: formatNumber(consumers.total || 0),
+      revenue: formatCurrency((rev.total || 0) * 0.15),
     };
+  };
 
-    const currentData = getFilterData();
+  const currentData = getFilterData();
 
-    const stats = [
-        {
-            label: "Total Gross Volume (TGV)",
-            value: currentData.tgv,
-            change: 'All time',
-            up: true,
-            icon: DollarSign,
-            color: 'hsl(219 90% 50%)',
-            bg: 'rgba(59,130,246,0.08)',
-            glow: 'hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)] border-blue-500/10',
-            sparklinePoints: currentData.sparklines[0],
-        },
-        {
-            label: 'Total Bookings',
-            value: currentData.bookings,
-            change: 'Network wide',
-            up: true,
-            icon: CheckCircle2,
-            color: 'hsl(142 71% 45%)',
-            bg: 'rgba(16,185,129,0.08)',
-            glow: 'hover:shadow-[0_12px_30px_rgba(16,185,129,0.12)] border-emerald-500/10',
-            sparklinePoints: currentData.sparklines[1],
-        },
-        {
-            label: 'Active Consumers',
-            value: currentData.consumers,
-            change: 'Growing',
-            up: true,
-            icon: Users,
-            color: 'hsl(38 92% 50%)',
-            bg: 'rgba(245,158,11,0.08)',
-            glow: 'hover:shadow-[0_12px_30px_rgba(245,158,11,0.12)] border-amber-500/10',
-            sparklinePoints: currentData.sparklines[2],
-        },
-        {
-            label: 'Net Platform Revenue',
-            value: currentData.revenue,
-            change: 'Calculated from 15% flat commission',
-            up: true,
-            icon: Activity,
-            color: 'hsl(262 83% 58%)',
-            bg: 'rgba(139,92,246,0.08)',
-            glow: 'hover:shadow-[0_12px_30px_rgba(139,92,246,0.12)] border-violet-500/10',
-            sparklinePoints: currentData.sparklines[3],
-        }
-    ];
+  const stats = [
+    {
+      label: 'Total Gross Volume',
+      value: currentData.tgv,
+      sub: 'All bookings combined',
+      change: '+12%',
+      up: true,
+      iconBg: '#dbeafe',
+      iconColor: '#1d4ed8',
+      Icon: DollarSign,
+    },
+    {
+      label: 'Total Bookings',
+      value: currentData.bookings,
+      sub: 'Across all verticals',
+      change: '+8%',
+      up: true,
+      iconBg: '#dcfce7',
+      iconColor: '#16a34a',
+      Icon: CheckCircle2,
+    },
+    {
+      label: 'Active Consumers',
+      value: currentData.consumers,
+      sub: 'Registered users',
+      change: '+15%',
+      up: true,
+      iconBg: '#f3e8ff',
+      iconColor: '#9333ea',
+      Icon: Users,
+    },
+    {
+      label: 'Net Platform Revenue',
+      value: currentData.revenue,
+      sub: '15% commission',
+      change: '+9%',
+      up: true,
+      iconBg: '#ffedd5',
+      iconColor: '#ea580c',
+      Icon: Activity,
+    },
+  ];
 
-    const verticalData = [
-        { name: 'Hotel Operations', filterKey: 'Hotel', icon: Building2, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-500/10', rev: formatCurrency(rev.hotels), bookings: formatNumber(bookings.hotels) },
-        { name: 'Tour Operations', filterKey: 'Packages', icon: Map, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', rev: formatCurrency(rev.packages), bookings: formatNumber(bookings.packages) },
-        { name: 'Bus Operations', filterKey: 'Buses', icon: Bus, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10', rev: formatCurrency(rev.buses), bookings: formatNumber(bookings.buses) },
-        { name: 'Cab Operations', filterKey: 'Cabs', icon: CarFront, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10', rev: formatCurrency(rev.cabs), bookings: formatNumber(bookings.cabs) },
-    ];
+  const verticalData = [
+    { name: 'Hotel Operations', filterKey: 'Hotel', Icon: Building2, iconBg: '#dbeafe', iconColor: '#1d4ed8', rev: formatCurrency(rev.hotels || 0), bookings: formatNumber(bookingsCount.hotels || 0) },
+    { name: 'Tour Operations', filterKey: 'Packages', Icon: Map, iconBg: '#dcfce7', iconColor: '#16a34a', rev: formatCurrency(rev.packages || 0), bookings: formatNumber(bookingsCount.packages || 0) },
+    { name: 'Bus Operations', filterKey: 'Buses', Icon: Bus, iconBg: '#fef9c3', iconColor: '#ca8a04', rev: formatCurrency(rev.buses || 0), bookings: formatNumber(bookingsCount.buses || 0) },
+    { name: 'Cab Operations', filterKey: 'Cabs', Icon: CarFront, iconBg: '#fee2e2', iconColor: '#dc2626', rev: formatCurrency(rev.cabs || 0), bookings: formatNumber(bookingsCount.cabs || 0) },
+  ];
+
+  const filteredVerticals = verticalData.filter(v =>
+    serviceFilter === 'All' || v.filterKey === serviceFilter
+  );
+
+
+  // Helper to filter bookings by period on the client side
+  const getBookingsFilteredByPeriod = () => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     
-    return (
-        <div className="min-h-full">
-            <Topbar title="Super Dashboard" subtitle="Global Intelligence and Platform-wide overview" />
-            <div className="p-6 md:p-8 space-y-6 md:space-y-8 animate-fadeIn max-w-[1600px] mx-auto">
+    return bookings.filter((b: any) => {
+      const date = new Date(b.createdAt || b.startDate).getTime();
+      
+      if (period === 'today') {
+        return date >= startOfToday;
+      }
+      if (period === 'week') {
+        const sevenDaysAgo = startOfToday - 7 * 24 * 60 * 60 * 1000;
+        return date >= sevenDaysAgo;
+      }
+      if (period === 'month') {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        return date >= startOfMonth;
+      }
+      if (period === 'year' || period === 'fy') {
+        const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+        return date >= startOfYear;
+      }
+      return true;
+    });
+  };
 
-                {/* Stats Grid - iOS Widgets Style */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-                    {stats.map((stat) => (
-                        <div 
-                            key={stat.label} 
-                            className={`ios-platter p-5 rounded-[24px] flex flex-col justify-between hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 group cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.01)] border ${stat.glow}`}
-                            style={{
-                                background: 'linear-gradient(135deg, var(--card-bg-start, rgba(255,255,255,0.05)), var(--card-bg-end, rgba(255,255,255,0.02)))',
-                                backdropFilter: 'blur(20px)',
-                            }}
-                        >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="p-2.5 rounded-2xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)]" style={{ background: stat.bg }}>
-                                    <stat.icon size={16} style={{ color: stat.color }} />
-                                </div>
-                                <Sparkline points={stat.sparklinePoints} color={stat.color} />
-                            </div>
-                            <div>
-                                <div className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-1.5">{stat.label}</div>
-                                <div className="text-xl md:text-2xl font-black tracking-tight text-foreground leading-none">
-                                    <AnimatedNumber value={stat.value} />
-                                </div>
-                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-black/5 dark:border-white/5">
-                                    <div className="text-[10px] font-bold text-muted-foreground">
-                                        {stat.change}
-                                    </div>
-                                    {stat.up !== null && (
-                                        <div className={`flex items-center gap-0.5 text-[10px] font-extrabold ${stat.up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                            {stat.up ? '+' : '-'}
-                                            {stat.up ? <ArrowUpRight size={10} className="stroke-[3.5]" /> : <ArrowDownRight size={10} className="stroke-[3.5]" />}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+  const periodFilteredBookings = getBookingsFilteredByPeriod();
 
-                {/* Vertical Performance Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Vertical Performance Widget */}
-                    <div className="ios-sheet p-6 rounded-[28px] border border-border/10 shadow-[0_12px_40px_rgba(0,0,0,0.02)]">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-extrabold text-sm uppercase tracking-wider text-muted-foreground/60">Vertical Performance</h3>
-                        </div>
-                        <div className="divide-y divide-border/5">
-                            {verticalData
-                            .filter(vert => serviceFilter === 'All' || vert.filterKey === serviceFilter)
-                            .map((vert, i) => (
-                                <div key={i} className="flex items-center justify-between py-4 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors rounded-xl px-2">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`p-3 rounded-2xl ${vert.bg} ${vert.color}`}>
-                                            <vert.icon size={20} />
-                                        </div>
-                                        <div>
-                                            <div className="font-black text-foreground text-sm">{vert.name}</div>
-                                            <div className="text-xs font-bold text-muted-foreground mt-0.5">{vert.bookings} Bookings</div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="font-black text-foreground">{vert.rev}</div>
-                                        <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1 flex items-center justify-end gap-1">
-                                            <TrendingUp size={10} /> Growing
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+  // Cancellation Requests lists based on period selection (must be after periodFilteredBookings)
+  const cancellationRequests = periodFilteredBookings.filter((b: any) => b.status === 'CANCELLED' || b.status === 'PENDING').slice(0, 4);
 
-                    {/* System Health Widget */}
-                    <div className="ios-sheet p-6 rounded-[28px] border border-border/10 shadow-[0_12px_40px_rgba(0,0,0,0.02)] relative overflow-hidden bg-indigo-600 dark:bg-indigo-900/50">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                            <Activity size={200} className="text-white" />
-                        </div>
-                        <div className="flex items-center justify-between mb-8 relative z-10">
-                            <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">System Health & Live Events</h3>
-                        </div>
-                        <div className="space-y-4 relative z-10">
-                            <div className="flex items-center justify-between bg-white/10 dark:bg-black/20 p-4 rounded-2xl backdrop-blur-md">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
-                                    <span className="font-bold text-sm text-white">Booking API Node 1</span>
-                                </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Operational</span>
-                            </div>
-                            <div className="flex items-center justify-between bg-white/10 dark:bg-black/20 p-4 rounded-2xl backdrop-blur-md">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
-                                    <span className="font-bold text-sm text-white">Payment Gateway (Stripe)</span>
-                                </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Operational</span>
-                            </div>
-                            <div className="flex items-center justify-between bg-white/10 dark:bg-black/20 p-4 rounded-2xl backdrop-blur-md border border-amber-500/30">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
-                                    <span className="font-bold text-sm text-white">Redis Caching Layer</span>
-                                </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">High Load</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+  // Compute real 12-month revenue dynamically from period-filtered bookings
+  const monthlyRevenue = Array(12).fill(0);
+  periodFilteredBookings.forEach((b: any) => {
+    const bookingDate = new Date(b.createdAt || b.startDate);
+    const bookingYear = bookingDate.getFullYear().toString();
+    if (bookingYear === selectedYear) {
+      const month = bookingDate.getMonth();
+      monthlyRevenue[month] += Number(b.totalAmount || 0);
+    }
+  });
 
-            </div>
+  const maxRevenue = Math.max(...monthlyRevenue, 1); // Avoid division by zero
+
+  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const salesGraphData = monthLabels.map((label, index) => {
+    const revenue = monthlyRevenue[index];
+    const percentage = Math.round((revenue / maxRevenue) * 100);
+    return {
+      label,
+      val: percentage,
+      revenue: formatCurrency(revenue)
+    };
+  });
+
+  const topbarActions = (
+    <button className="btn btn-outline" style={{ gap: 6 }}>
+      <Download size={14} />
+      Export Report
+    </button>
+  );
+
+  return (
+    <div>
+      <Topbar
+        title="Super Dashboard"
+        subtitle={`Executive overview • Last updated: ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
+        actions={topbarActions}
+      />
+
+      <div className="admin-page animate-fadeIn space-y-6">
+
+        {/* Period Filter */}
+        <div>
+          <div className="period-pills">
+            {PERIODS.map(p => (
+              <button
+                key={p.value}
+                className={`period-pill ${period === p.value ? 'active' : ''}`}
+                onClick={() => setPeriod(p.value)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
-    );
-}
 
+        {/* Stat Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          {stats.map((stat, i) => (
+            <div key={i} className="stat-card">
+              <div>
+                <div className="stat-card-label">{stat.label}</div>
+                <div className="stat-card-value">
+                  {isLoading ? (
+                    <div style={{ width: 80, height: 28, background: 'hsl(var(--muted))', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
+                  ) : stat.value}
+                </div>
+                <div className="stat-card-sub" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <span className={`stat-badge ${stat.up ? 'stat-badge-up' : 'stat-badge-down'}`}>
+                    {stat.up ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                    {stat.change} vs last period
+                  </span>
+                </div>
+              </div>
+              <div
+                className="stat-card-icon"
+                style={{ background: stat.iconBg, color: stat.iconColor }}
+              >
+                <stat.Icon size={20} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Sales Graph - Interactive Visual Representation with Year Filter */}
+        <div className="card p-6">
+          <div className="card-header border-none pb-0 flex items-center justify-between">
+            <div>
+              <div className="card-title text-sm uppercase tracking-wider text-slate-400">Sales & Booking Trends</div>
+              <div className="text-xl font-black text-foreground mt-1">Gross Revenue Chart</div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="bg-black/5 dark:bg-white/5 border border-border/10 rounded-xl py-2 px-3 text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/10 text-foreground"
+              >
+                <option value="2026">Year 2026</option>
+                <option value="2025">Year 2025</option>
+                <option value="2024">Year 2024</option>
+              </select>
+              <span className="badge badge-info text-[9px] uppercase tracking-widest px-2.5 py-1">Real-time</span>
+            </div>
+          </div>
+          
+          <div className="mt-8 flex items-end justify-between h-48 px-4 border-b border-border/10 pb-2 gap-4">
+            {salesGraphData.map((data, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-full relative flex items-end justify-center">
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-2 bg-slate-900 border border-border/10 text-white text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl z-20">
+                    {data.revenue}
+                  </div>
+                  {/* Colored column */}
+                  <div 
+                    className="w-8 md:w-12 bg-blue-600/30 group-hover:bg-blue-600 rounded-t-lg transition-all duration-500" 
+                    style={{ height: `${data.val * 1.5}px` }}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-slate-400">{data.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mid Section: Performance and Status */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+          {/* Vertical Performance */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Vertical Performance</div>
+              <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>{period.toUpperCase()}</span>
+            </div>
+            <div style={{ padding: 0 }}>
+              {filteredVerticals.map((v, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 20px',
+                  borderBottom: i < filteredVerticals.length - 1 ? '1px solid hsl(var(--border) / 0.6)' : 'none',
+                }} className="flex items-center justify-between">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 38, height: 38,
+                      borderRadius: 9,
+                      background: v.iconBg,
+                      color: v.iconColor,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <v.Icon size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{v.name}</div>
+                      <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginTop: 1 }}>{v.bookings} bookings</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'hsl(var(--foreground))' }}>{isLoading ? '...' : v.rev}</div>
+                    <div style={{ fontSize: 11, color: '#16a34a', marginTop: 1, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
+                      <TrendingUp size={10} /> Growing
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* System Status */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">System Status</div>
+              <span className="badge badge-success" style={{ fontSize: 10 }}>All Operational</span>
+            </div>
+            <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { label: 'Booking API Node', status: 'Operational', dot: 'green' },
+                { label: 'Payment Gateway (Razorpay)', status: 'Operational', dot: 'green' },
+                { label: 'Notification Service', status: 'Operational', dot: 'green' },
+                { label: 'Database Cluster', status: 'Healthy', dot: 'green' },
+                { label: 'GST Invoice Engine', status: 'Active', dot: 'green' },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  background: 'hsl(var(--muted) / 0.4)',
+                  borderRadius: 8,
+                  border: '1px solid hsl(var(--border))',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className={`status-dot status-dot-${item.dot}`} />
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'hsl(var(--foreground))' }}>{item.label}</span>
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#16a34a' }}>{item.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Lower Section: Recent Bookings Feed & Cancellation Requests */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+          
+          {/* Recent Bookings Feed */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Recent Reservations</div>
+              <Link href="/admin/bookings" className="text-xs text-blue-500 font-bold hover:underline">View All</Link>
+            </div>
+            <div className="p-0 divide-y divide-border/5">
+              {isBookingsLoading ? (
+                <div className="p-8 text-center text-slate-400 text-xs">Loading bookings...</div>
+              ) : periodFilteredBookings.slice(0, 4).map((b: any, i: number) => (
+                <div key={i} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-600/10 text-blue-500 rounded-lg">
+                      <Building2 size={16} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-foreground">{b.guestName}</div>
+                      <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">{b.bookingReference || `#${b.id.slice(0,6)}`}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-black text-foreground">₹{Number(b.totalAmount).toLocaleString()}</div>
+                    <div className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider mt-0.5">{b.status}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cancellation Audits */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Pending Audits & Cancellation</div>
+              <span className="badge badge-warning text-[9px] uppercase tracking-widest px-2 py-0.5">Alert</span>
+            </div>
+            <div className="p-0 divide-y divide-border/5">
+              {cancellationRequests.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+                  <AlertCircle size={20} className="opacity-30" />
+                  No pending cancellation requests found.
+                </div>
+              ) : cancellationRequests.map((b: any, i: number) => (
+                <div key={i} className="p-4 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-black text-foreground">{b.guestName}</div>
+                    <div className="text-[10px] text-orange-400 font-bold uppercase tracking-widest mt-0.5">REF: {b.bookingReference}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => updateStatusMutation.mutate({ id: b.id, status: 'CANCELLED' })}
+                      className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-500 transition-colors"
+                    >
+                      Approve Cancel
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+}

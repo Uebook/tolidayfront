@@ -7,7 +7,7 @@ import {
        Users, Search, Shield, Building2,
        Mail, Phone, ShieldCheck, ShieldAlert,
        MoreVertical, AlertCircle, UserPlus,
-       Lock, Unlock, MapPin, Zap
+       Lock, Unlock, MapPin, Zap, Download
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -15,6 +15,8 @@ import { toast } from 'react-hot-toast';
 export default function AdminUsersPage() {
        const queryClient = useQueryClient();
        const [filter, setFilter] = useState('');
+       const [roleFilter, setRoleFilter] = useState('ALL');
+       const [statusFilter, setStatusFilter] = useState('ALL');
 
        const { data: users = [], isLoading } = useQuery({
               queryKey: ['staff'],
@@ -74,12 +76,39 @@ export default function AdminUsersPage() {
               createStaffMutation.mutate(formData);
        };
 
-       const filteredUsers = users.filter((u: any) =>
-              (u.name || '').toLowerCase().includes(filter.toLowerCase()) ||
-              (u.email || '').toLowerCase().includes(filter.toLowerCase()) ||
-              (u.hotel?.name || '').toLowerCase().includes(filter.toLowerCase()) ||
-              (u.role || '').toLowerCase().includes(filter.toLowerCase())
-       );
+       const filteredUsers = users.filter((u: any) => {
+              const matchesSearch = (u.name || '').toLowerCase().includes(filter.toLowerCase()) ||
+                     (u.email || '').toLowerCase().includes(filter.toLowerCase()) ||
+                     (u.hotel?.name || '').toLowerCase().includes(filter.toLowerCase()) ||
+                     (u.role || '').toLowerCase().includes(filter.toLowerCase());
+              const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+              const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'ACTIVE' && u.isActive) || (statusFilter === 'INACTIVE' && !u.isActive);
+              return matchesSearch && matchesRole && matchesStatus;
+       });
+
+       const exportToCSV = () => {
+              if (!filteredUsers.length) {
+                     toast.error('No users to export');
+                     return;
+              }
+              const headers = ['Name', 'Email', 'Role', 'Status', 'Service Type'];
+              const rows = filteredUsers.map((u: any) => [
+                     u.name || '',
+                     u.email || '',
+                     u.role || '',
+                     u.isActive ? 'Active' : 'Inactive',
+                     u.serviceType || ''
+              ]);
+              const csvContent = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+              const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+              link.click();
+              URL.revokeObjectURL(url);
+              toast.success(`Exported ${filteredUsers.length} users`);
+       };
 
        if (isLoading) {
               return <div className="p-20 text-center font-black text-muted-foreground animate-pulse uppercase tracking-[0.3em]">Decoding User Matrix...</div>;
@@ -154,9 +183,16 @@ export default function AdminUsersPage() {
                                           className="w-full bg-black/5 dark:bg-white/5 border border-transparent rounded-2xl text-foreground py-5 pl-16 pr-6 text-sm font-black text-foreground focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                                    />
                             </div>
-                            <div className="flex items-center gap-3 px-6 py-4 bg-black/5 dark:bg-white/5 rounded-2xl border border-transparent text-foreground">
-                                   <Zap size={16} className="text-amber-500" />
-                                   <span className="text-[10px] font-black text-foreground uppercase tracking-widest">{filteredUsers.length} Active Records</span>
+                            <div className="flex items-center gap-3">
+                                   <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="bg-black/5 dark:bg-white/5 border border-transparent rounded-2xl py-5 px-6 text-sm font-black focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-foreground">
+                                          <option value="ALL">All Roles</option><option value="ADMIN">Admin</option><option value="OWNER">Owner</option><option value="MANAGER">Manager</option>
+                                   </select>
+                                   <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-black/5 dark:bg-white/5 border border-transparent rounded-2xl py-5 px-6 text-sm font-black focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-foreground">
+                                          <option value="ALL">All Status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
+                                   </select>
+                                   <button onClick={exportToCSV} className="flex items-center gap-2 px-6 py-5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl text-sm font-black uppercase tracking-widest transition-all hover:opacity-90">
+                                          <Download size={18} /> Export
+                                   </button>
                             </div>
                      </div>
 

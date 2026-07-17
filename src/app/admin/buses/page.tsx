@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
     Bus, CheckCircle, XCircle, Shield, Search, Filter, Mail, Eye, Check, Ban, 
-    ArrowLeft, Building2, MapPin, Phone, Calendar, User, Briefcase, Plus, Edit, Trash2, Clock, CreditCard, Gift, Tag, X
+    ArrowLeft, Building2, MapPin, Phone, Calendar, User, Briefcase, Plus, Edit, Trash2, Clock, CreditCard, Gift, Tag, X, Download
 } from 'lucide-react';
 import { useState } from 'react';
 import DataTable from '@/components/admin/DataTable';
@@ -14,6 +14,8 @@ export default function AdminBusesPage() {
        const queryClient = useQueryClient();
        const [filter, setFilter] = useState('');
        const [statusFilter, setStatusFilter] = useState('All');
+       const [dateFrom, setDateFrom] = useState('');
+       const [dateTo, setDateTo] = useState('');
        const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
        const [activeTab, setActiveTab] = useState<'PROFILE' | 'FLEET' | 'BOOKINGS' | 'OFFERS'>('PROFILE');
        const [isAddBusModalOpen, setIsAddBusModalOpen] = useState(false);
@@ -97,9 +99,37 @@ export default function AdminBusesPage() {
               }
        });
 
-       const filteredVendors = vendors.filter((v: any) =>
-              (v.businessName || v.name || '').toLowerCase().includes(filter.toLowerCase()) ||
-              v.email.toLowerCase().includes(filter.toLowerCase())
+       const filteredVendors = vendors.filter((v: any) => {
+              const matchesSearch = (v.businessName || v.name || '').toLowerCase().includes(filter.toLowerCase()) || v.email.toLowerCase().includes(filter.toLowerCase());
+              let matchesDates = true;
+              if (dateFrom) matchesDates = matchesDates && new Date(v.createdAt || Date.now()) >= new Date(dateFrom);
+              if (dateTo) matchesDates = matchesDates && new Date(v.createdAt || Date.now()) <= new Date(dateTo);
+              return matchesSearch && matchesDates;
+       });
+
+       const exportToCSV = () => {
+              if (!filteredVendors.length) return toast.error('No vendors to export');
+              const headers = ['ID', 'Business Name', 'Email', 'Phone', 'Status', 'Created At'];
+              const rows = filteredVendors.map((v: any) => [
+                     v.id, v.businessName || v.name, v.email, v.phone || '', v.status, v.createdAt ? new Date(v.createdAt).toLocaleDateString() : ''
+              ]);
+              const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `bus_vendors_${new Date().toISOString().slice(0,10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success(`Exported ${filteredVendors.length} vendors`);
+       };
+
+       const headerAction = (
+              <div className="flex items-center gap-2">
+                     <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground" />
+                     <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground" />
+                     <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:opacity-90 rounded-xl text-xs font-black uppercase tracking-widest transition-all"><Download size={16} /> Export</button>
+              </div>
        );
 
        const columns = [
@@ -402,6 +432,7 @@ export default function AdminBusesPage() {
                             onSearch={setFilter}
                             onFilter={setStatusFilter}
                             actions={actions}
+                            headerAction={headerAction}
                      />
               </div>
        );

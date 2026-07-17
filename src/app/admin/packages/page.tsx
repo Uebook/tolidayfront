@@ -6,7 +6,7 @@ import {
        CheckCircle2, Ban, Mail, Phone,
        MapPin, ExternalLink, X, Building, Info, Edit,
        CreditCard, FileText, Globe, Landmark, Eye, Check,
-       ArrowLeft, Package, Star, Shield, Clock, Plus, Trash2, Gift, Tag
+       ArrowLeft, Package, Star, Shield, Clock, Plus, Trash2, Gift, Tag, Download
 } from 'lucide-react';
 import { useState } from 'react';
 import DataTable from '@/components/admin/DataTable';
@@ -16,6 +16,8 @@ export default function AdminTourPartnersPage() {
        const queryClient = useQueryClient();
        const [filter, setFilter] = useState('');
        const [statusFilter, setStatusFilter] = useState('All');
+       const [dateFrom, setDateFrom] = useState('');
+       const [dateTo, setDateTo] = useState('');
        const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
        const [activeTab, setActiveTab] = useState<'PROFILE' | 'PACKAGES' | 'HISTORY' | 'OFFERS'>('PROFILE');
        const [isAddPkgModalOpen, setIsAddPkgModalOpen] = useState(false);
@@ -99,9 +101,37 @@ export default function AdminTourPartnersPage() {
               }
        });
 
-       const filteredPartners = partners.filter((p: any) =>
-              (p.businessName || p.name || '').toLowerCase().includes(filter.toLowerCase()) ||
-              p.email.toLowerCase().includes(filter.toLowerCase())
+       const filteredPartners = partners.filter((p: any) => {
+              const matchesSearch = (p.companyName || p.name || '').toLowerCase().includes(filter.toLowerCase()) || p.email.toLowerCase().includes(filter.toLowerCase());
+              let matchesDates = true;
+              if (dateFrom) matchesDates = matchesDates && new Date(p.createdAt || Date.now()) >= new Date(dateFrom);
+              if (dateTo) matchesDates = matchesDates && new Date(p.createdAt || Date.now()) <= new Date(dateTo);
+              return matchesSearch && matchesDates;
+       });
+
+       const exportToCSV = () => {
+              if (!filteredPartners.length) return toast.error('No partners to export');
+              const headers = ['ID', 'Company Name', 'Email', 'Phone', 'Status', 'Created At'];
+              const rows = filteredPartners.map((p: any) => [
+                     p.id, p.companyName || p.name, p.email, p.phone || '', p.status, p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''
+              ]);
+              const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `tour_partners_${new Date().toISOString().slice(0,10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success(`Exported ${filteredPartners.length} partners`);
+       };
+
+       const headerAction = (
+              <div className="flex items-center gap-2">
+                     <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground" />
+                     <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground" />
+                     <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:opacity-90 rounded-xl text-xs font-black uppercase tracking-widest transition-all"><Download size={16} /> Export</button>
+              </div>
        );
 
        const columns = [
@@ -404,6 +434,7 @@ export default function AdminTourPartnersPage() {
                             onSearch={setFilter}
                             onFilter={setStatusFilter}
                             actions={actions}
+                            headerAction={headerAction}
                      />
               </div>
        );

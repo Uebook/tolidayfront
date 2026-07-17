@@ -116,26 +116,7 @@ export default function LoginPage() {
                                                  )}
                                           </button>
                                           
-                                          {/* Seeded Credentials Plist Box */}
-                                          <div className="mt-6 p-4 rounded-2xl bg-blue-50/40 dark:bg-blue-950/10 border border-blue-100/30 dark:border-blue-900/20">
-                                                 <p className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3">Seeded Demo Credentials</p>
-                                                 <div className="space-y-2 text-xs font-medium text-foreground/80">
-                                                        <div className="flex flex-col gap-0.5 border-b border-blue-100/20 dark:border-blue-900/10 pb-2">
-                                                               <span className="text-[10px] font-bold text-muted-foreground">DEMO GRAND HOTEL (OWNER)</span>
-                                                               <div className="flex justify-between font-mono text-[11px] mt-0.5">
-                                                                      <span className="text-muted-foreground">U: demo.grand@toliday.in</span>
-                                                                      <span className="text-foreground">P: demoPassword123</span>
-                                                               </div>
-                                                        </div>
-                                                        <div className="flex flex-col gap-0.5 pt-1">
-                                                               <span className="text-[10px] font-bold text-muted-foreground">NOIDA HOTEL (OWNER)</span>
-                                                               <div className="flex justify-between font-mono text-[11px] mt-0.5">
-                                                                      <span className="text-muted-foreground">U: noida@hotel.com</span>
-                                                                      <span className="text-foreground">P: password123</span>
-                                                               </div>
-                                                        </div>
-                                                 </div>
-                                          </div>
+
                                    </form>
                             </div>
 

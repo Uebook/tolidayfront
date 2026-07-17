@@ -7,7 +7,9 @@ import { Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import DataTable from '@/components/admin/DataTable';
 import Topbar from '@/components/layout/Topbar';
-import { IndianRupee, ArrowUpRight, ArrowDownRight, RefreshCcw, Download, Clock, FileText, CheckCircle2, CreditCard, Filter } from 'lucide-react';
+import Link from 'next/link';
+import { IndianRupee, ArrowUpRight, ArrowDownRight, RefreshCcw, Download, Clock, FileText, CheckCircle2, CreditCard, Filter, Eye } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 type Tab = 'OVERVIEW' | 'INVOICES' | 'PAYOUT REQUESTS' | 'PAYMENT HISTORY';
 
@@ -117,35 +119,97 @@ export default function HotelsFinancePage() {
               }
        ];
 
-       const headerAction = (
-           <div className="flex items-center gap-3 w-full md:w-auto">
-               <select
-                   value={verticalFilter}
-                   onChange={(e) => setVerticalFilter(e.target.value)}
-                   className="bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 rounded-2xl py-3 px-4 text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground"
-               >
-                   <option value="HOTEL">Hotels</option>
-                   <option value="CAB">Cabs</option>
-                   <option value="BUS">Bus</option>
-                   <option value="TOUR">Tours</option>
-                   <option value="FLIGHT">Flights</option>
-               </select>
-               <select
-                   value={statusFilter}
-                   onChange={(e) => setStatusFilter(e.target.value)}
-                   className="bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 rounded-2xl py-3 px-4 text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground"
-               >
-                   <option value="ALL">All Status</option>
-                   <option value="COMPLETED">Completed</option>
-                   <option value="PENDING">Pending</option>
-                   <option value="FAILED">Failed</option>
-               </select>
-               <button className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-xl shadow-indigo-600/20 active:scale-95 group ml-auto md:ml-0">
-                      <Download size={14} className="group-hover:translate-y-0.5 transition-transform" /> Export
-               </button>
-           </div>
-       );
+        const exportLedgerToCSV = () => {
+          if (!filteredTransactions.length) {
+            toast.error('No transactions to export');
+            return;
+          }
+          const headers = ['Transaction Info', 'Property', 'Direction', 'Amount (₹)', 'Platform Fee (₹)', 'Status', 'Date'];
+          const rows = filteredTransactions.map((trx: any) => [
+            trx.id || '',
+            trx.hotel || '',
+            trx.type === 'INCOME' ? 'Booking Revenue' : 'Vendor Payout',
+            trx.amount || 0,
+            trx.fee || 0,
+            trx.status || '',
+            new Date(trx.date).toLocaleString('en-IN')
+          ]);
+          downloadCSV('ledger_export', headers, rows);
+        };
 
+        const exportInvoicesToCSV = () => {
+          const headers = ['Invoice ID', 'Vendor', 'Period', 'Amount (₹)', 'Status'];
+          const rows = mockInvoices.map((inv: any) => [
+            inv.id, inv.vendor, inv.period, inv.amount, inv.status
+          ]);
+          downloadCSV('invoices_export', headers, rows);
+        };
+
+        const exportPayoutsToCSV = () => {
+          const headers = ['Request ID', 'Vendor', 'Requested At', 'Amount (₹)', 'Status'];
+          const rows = mockPayoutRequests.map((req: any) => [
+            req.id, req.vendor, new Date(req.requestedAt).toLocaleString('en-IN'), req.amount, req.status
+          ]);
+          downloadCSV('payout_requests_export', headers, rows);
+        };
+
+        const exportHistoryToCSV = () => {
+          const headers = ['Transaction ID', 'Vendor', 'Date', 'Amount (₹)', 'Method', 'Status'];
+          const rows = mockPaymentHistory.map((txn: any) => [
+            txn.id, txn.vendor, new Date(txn.date).toLocaleString('en-IN'), txn.amount, txn.method, txn.status
+          ]);
+          downloadCSV('payment_history_export', headers, rows);
+        };
+
+        const downloadCSV = (filename: string, headers: string[], rows: any[]) => {
+          const csvContent = [headers, ...rows]
+            .map(r => r.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+          const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${filename}_${new Date().toISOString().slice(0, 10)}.csv`;
+          link.click();
+          URL.revokeObjectURL(url);
+        };
+
+        const headerAction = (exportFn: () => void) => (
+            <div className="flex items-center gap-3 w-full md:w-auto">
+                {activeTab === 'OVERVIEW' && (
+                  <>
+                    <select
+                        value={verticalFilter}
+                        onChange={(e) => setVerticalFilter(e.target.value)}
+                        className="bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 rounded-2xl py-3 px-4 text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground"
+                    >
+                        <option value="HOTEL">Hotels</option>
+                        <option value="CAB">Cabs</option>
+                        <option value="BUS">Bus</option>
+                        <option value="TOUR">Tours</option>
+                        <option value="FLIGHT">Flights</option>
+                    </select>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="bg-black/[0.02] dark:bg-white/[0.03] border border-border/10 rounded-2xl py-3 px-4 text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground"
+                    >
+                        <option value="ALL">All Status</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="FAILED">Failed</option>
+                    </select>
+                  </>
+                )}
+                <button 
+                  onClick={exportFn}
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-xl shadow-indigo-600/20 active:scale-95 group ml-auto md:ml-0"
+                >
+                       <Download size={14} className="group-hover:translate-y-0.5 transition-transform" /> Export
+                </button>
+            </div>
+        );
+ 
        // MOCK DATA for new tabs
        const mockInvoices = [
            { id: 'INV-2026-001', vendor: 'Grand Hyatt Mumbai', period: 'May 2026', amount: 24000, status: 'GENERATED' },
@@ -192,12 +256,12 @@ export default function HotelsFinancePage() {
                             </div>
 
                             {/* Tab Navigation */}
-                            <div className="flex bg-black/[0.02] dark:bg-white/[0.02] p-1.5 rounded-2xl shadow-inner border border-border/10 w-full overflow-x-auto hide-scrollbar">
+                            <div className="flex bg-transparent p-1 border-b border-border/10 w-full overflow-x-auto hide-scrollbar">
                                 {(["OVERVIEW", "INVOICES", "PAYOUT REQUESTS", "PAYMENT HISTORY"] as Tab[]).map(tab => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
-                                        className={`px-8 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 ${activeTab === tab ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-muted-foreground hover:text-foreground hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'}`}
+                                        className={`px-8 py-3.5 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
                                         <div className="flex items-center justify-center gap-2">
                                             {tab === 'OVERVIEW' && <IndianRupee size={16} />}
@@ -226,7 +290,7 @@ export default function HotelsFinancePage() {
                                             columns={ledgerColumns}
                                             data={filteredTransactions}
                                             onSearch={setSearch}
-                                            headerAction={headerAction}
+                                            headerAction={headerAction(exportLedgerToCSV)}
                                         />
                                     )}
 
@@ -243,10 +307,20 @@ export default function HotelsFinancePage() {
                                                     <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${inv.status === 'PAID' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600'}`}>
                                                         {inv.status}
                                                     </span>
+                                                )},
+                                                { header: 'Actions', accessor: 'actions', render: (inv: any) => (
+                                                    <div className="flex gap-2">
+                                                        <Link href={`/invoice/${inv.id}`} className="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1.5">
+                                                            <Eye size={12} /> View
+                                                        </Link>
+                                                        <Link href={`/invoice/${inv.id}`} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-1.5">
+                                                            <Download size={12} /> PDF
+                                                        </Link>
+                                                    </div>
                                                 )}
                                             ]}
                                             data={mockInvoices}
-                                            headerAction={headerAction}
+                                            headerAction={headerAction(exportInvoicesToCSV)}
                                         />
                                     )}
 
@@ -267,7 +341,7 @@ export default function HotelsFinancePage() {
                                                 )}
                                             ]}
                                             data={mockPayoutRequests}
-                                            headerAction={headerAction}
+                                            headerAction={headerAction(exportPayoutsToCSV)}
                                         />
                                     )}
 
@@ -288,7 +362,7 @@ export default function HotelsFinancePage() {
                                                 )}
                                             ]}
                                             data={mockPaymentHistory}
-                                            headerAction={headerAction}
+                                            headerAction={headerAction(exportHistoryToCSV)}
                                         />
                                     )}
                                 </>

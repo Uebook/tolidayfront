@@ -52,7 +52,20 @@ export function getAuthUser(): AuthUser | null {
 
 export function logout() {
     localStorage.removeItem('token');
-    window.location.href = '/hotel/login';
+    const path = window.location.pathname;
+    if (path.startsWith('/admin')) {
+        window.location.href = '/admin/login';
+    } else if (path.startsWith('/packages')) {
+        window.location.href = '/packages/login';
+    } else if (path.startsWith('/buses')) {
+        window.location.href = '/buses/login';
+    } else if (path.startsWith('/cabs')) {
+        window.location.href = '/cabs/login';
+    } else if (path.startsWith('/siteseeing')) {
+        window.location.href = '/siteseeing/login';
+    } else {
+        window.location.href = '/hotel/login';
+    }
 }
 
 export function hasPermission(key: string): boolean {

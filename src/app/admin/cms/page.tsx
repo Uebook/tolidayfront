@@ -77,11 +77,12 @@ export default function CMSPage() {
   // ----------------------------------------
   const saveHeroMutation = useMutation({
     mutationFn: async (data: typeof heroForm) => {
+      const { id: _, ...payload } = data; // Omit id from payload for new creations
       if (editingId && editingId.startsWith('hero-')) {
         const id = editingId.replace('hero-', '');
         return api.patch(`/admin/cms/hero/${id}`, data);
       }
-      return api.post('/admin/cms/hero', data);
+      return api.post('/admin/cms/hero', payload);
     },
     onSuccess: () => {
       toast.success(editingId ? 'Hero Banner updated!' : 'Hero Banner created!');
